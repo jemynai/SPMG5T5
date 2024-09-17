@@ -1,0 +1,113 @@
+from flask import Blueprint, request, jsonify
+from firebase import get_db
+
+db = get_db()
+
+# Define a blueprint for user-related routes
+users_bp = Blueprint('users', __name__)
+
+@users_bp.route('/create_user', methods=['POST'])
+def create_user():
+    try:
+        # Get the user data from the request
+        user_data = request.json
+        if not user_data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Validate required fields
+        if 'id' not in user_data:
+            return jsonify({"error": "Missing 'id'"}), 400
+        
+        # Check if the user already exists
+        user_ref = db.collection('users').document(user_data['id'])
+        if user_ref.get().exists:
+            return jsonify({"error": "User already exists"}), 400
+
+        # Create a new user document in Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.set({
+            'id': user_data['id'],
+            'country': user_data['country'],
+            'dept': user_data['dept'],
+            'email': user_data['email'],
+            'first_name': user_data['first_name'],
+            'last_name': user_data['last_name'],
+            'position': user_data['position'],
+            'role': user_data['role'],
+            'rpt_manager': user_data['rpt_manager'],
+        })
+        
+        return jsonify({"message": "User created", "user_id": user_data['id']}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@users_bp.route('/get_users', methods=['GET'])
+def get_users():
+    try:
+        # Get all users from Firestore
+        users = db.collection('users').stream()
+        
+        # Convert the users to a list of dictionaries
+        users_list = [user.to_dict() for user in users]
+        
+        return jsonify({"users": users_list}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@users_bp.route('/get_user/<user_id>', methods=['GET'])
+def get_user(user_id):
+    try:
+        # Get the user from Firestore
+        user = db.collection('users').document(user_id).get()
+        
+        # Convert the user to a dictionary
+        user_dict = user.to_dict()
+        
+        return jsonify({"user": user_dict}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@users_bp.route('/update_user/<user_id>', methods=['PUT'])
+def update_user(user_id):
+    try:
+        # Get the user data from the request
+        user_data = request.json
+        if not user_data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        # Validate required fields
+        if 'id' not in user_data:
+            return jsonify({"error": "Missing 'id'"}), 400
+        
+        # Update the user in Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'country': user_data['country'],
+            'dept': user_data['dept'],
+            'email': user_data['email'],
+            'first_name': user_data['first_name'],
+            'last_name': user_data['last_name'],
+            'position': user_data['position'],
+            'role': user_data['role'],
+            'rpt_manager': user_data['rpt_manager'],
+        })
+        
+        return jsonify({"message": "User updated", "user_id": user_id}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@users_bp.route('/delete_user/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    try:
+        # Delete the user from Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.delete()
+        
+        return jsonify({"message": "User deleted", "user_id": user_id}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
