@@ -22,7 +22,6 @@ def create_user():
         # Create a new user document in Firestore
         user_ref = db.collection('users').document(user_data['id'])
         user_ref.set({
-            'id': user_data['id'],
             'country': user_data['country'],
             'dept': user_data['dept'],
             'email': user_data['email'],
@@ -82,7 +81,11 @@ def get_users():
         users = db.collection('users').stream()
         
         # Convert the users to a list of dictionaries
-        users_list = [user.to_dict() for user in users]
+        users_list = []
+        for user in users:
+            user_data = user.to_dict()
+            user_data['id'] = user.id
+            users_list.append(user_data)
         
         return jsonify({"users": users_list}), 200
 
@@ -97,8 +100,9 @@ def get_user(user_id):
         
         # Convert the user to a dictionary
         user_dict = user.to_dict()
+        user_dict['id'] = user.id
         
-        return jsonify({"user": user_dict}), 200
+        return jsonify({'user': user_dict}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -111,20 +115,22 @@ def update_user(user_id):
         if not user_data:
             return jsonify({"error": "No data provided"}), 400
         
-        # Update the user in Firestore
         user_ref = db.collection('users').document(user_id)
-        user_ref.update({
-            'country': user_data['country'],
-            'dept': user_data['dept'],
-            'email': user_data['email'],
-            'first_name': user_data['first_name'],
-            'last_name': user_data['last_name'],
-            'position': user_data['position'],
-            'role': user_data['role'],
-            'rpt_manager': user_data['rpt_manager'],
-        })
+
+        # Check if user exists
+        if not user_ref.get().exists:
+            return jsonify({"error": "User does not exist"}), 404
+    
+        # Strip id from user_data if it exists
+        try:
+            user_data.pop('id')
+        except:
+            pass
+
+        # Update user
+        user_ref.update(user_data)
         
-        return jsonify({"message": "User updated", "user_id": user_id}), 200
+        return jsonify({"message": "User updated", "user": user_id}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
