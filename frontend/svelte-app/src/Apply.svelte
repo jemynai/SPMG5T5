@@ -1,8 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte'; // Import event dispatcher
     const dispatch = createEventDispatcher(); // Create an event dispatcher
-    // info to export: selectedDate, applicationType, selectedDays, selectedDayOption, selectedHalfDay, reason
-
 
     let step = 1; // Tracks the current step of the process
 
@@ -22,6 +20,9 @@
 
     // Step 4: Reason input
     let reason = '';
+
+    // Step 5: Review and submit
+    let reviewMode = false; // Indicates if we are in review mode
 
     // Validate date (must be at least 24 hours from now)
     const validateDate = () => {
@@ -54,9 +55,11 @@
             return;
         }
 
-        step += 1; // Proceed to the next step or submission
-        if (step > 4) {
-            handleSubmit(); // Final submission on step 4
+        // Move to next step or review mode
+        if (step === 4) {
+            reviewMode = true; // Enable review mode instead of going to step 5
+        } else {
+            step += 1; // Proceed to the next step
         }
     };
 
@@ -95,10 +98,15 @@
         selectedHalfDay = period;
     };
 
+    // Final submission function
     const handleSubmit = () => {
-        // Final submission logic (you can replace this with an API call, etc.)
+        // You can replace this with an actual API call
         alert(`Application submitted:\nDate: ${selectedDate}\nType: ${applicationType}\nDays: ${selectedDays.join(', ')}\nTime: ${selectedDayOption === 'full-day' ? 'Full Day' : selectedHalfDay}\nReason: ${reason}`);
-        dispatch('close'); // Close the modal
+        dispatch('close'); // Close the modal after submission
+    };
+
+    const backToEdit = () => {
+        reviewMode = false; // Exit review mode and allow user to go back to the form
     };
 </script>
 
@@ -191,10 +199,6 @@
         justify-content: space-between;
     }
 
-    input[type="radio"] {
-        margin-right: 10px;
-    }
-
     textarea {
         width: 100%;
         height: 80px;
@@ -203,6 +207,14 @@
         border-radius: 4px;
         border: 1px solid #ccc;
     }
+
+    .review-box {
+        background-color: #f7f7f7;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
 </style>
 
 <!-- Modal Content -->
@@ -210,75 +222,96 @@
     <div class="modal-content" on:click|stopPropagation>
         <button class="close-button" on:click={() => dispatch('close')}>&times;</button>
 
-        <!-- Step 1: Date Selection -->
-        {#if step === 1}
-            <h2>Apply for WFH Arrangement</h2>
-            <label for="wfh-date">Select WFH Date:</label>
-            <input type="date" id="wfh-date" bind:value={selectedDate} on:change={validateDate} />
+        <!-- If in review mode, show the review step -->
+        {#if reviewMode}
+            <div class="review-box">
+                <h3>Review your application</h3>
+                <p><strong>Date:</strong> {selectedDate}</p>
+                <p><strong>Application Type:</strong> {applicationType}</p>
+                {#if applicationType === 'weekly'}
+                    <p><strong>Selected Days:</strong> {selectedDays.join(', ')}</p>
+                {/if}
+                <p><strong>Time:</strong> {selectedDayOption === 'full-day' ? 'Full Day' : selectedHalfDay}</p>
+                <p><strong>Reason:</strong> {reason}</p>
+            </div>
 
-        <!-- Step 2: Repeated Weekly or One-Time -->
-        {:else if step === 2}
-            <h3>Application Type</h3>
-            <label>
-                <input type="radio" name="applicationType" value="one-time" checked={applicationType === 'one-time'} on:change={handleApplicationTypeChange} />
-                One-time application
-            </label>
-            <br />
-            <label>
-                <input type="radio" name="applicationType" value="weekly" checked={applicationType === 'weekly'} on:change={handleApplicationTypeChange} />
-                Repeated weekly
-            </label>
+            <div class="buttons">
+                <button class="back-button" on:click={backToEdit}>Back to Edit</button>
+                <button class="next-button" on:click={handleSubmit}>Submit</button>
+            </div>
 
-            {#if applicationType === 'weekly'}
-                <div>
-                    <h4>Select Days:</h4>
-                    {#each daysOfWeek as day}
-                        <div class="day-option {selectedDays.includes(day) ? 'selected' : ''}" on:click={() => toggleDay(day)}>
-                            {day}
+        <!-- If not in review mode, show the current form step -->
+        {:else}
+            <!-- Step 1: Date Selection -->
+            {#if step === 1}
+                <h2>Apply for WFH Arrangement</h2>
+                <label for="wfh-date">Select WFH Date:</label>
+                <input type="date" id="wfh-date" bind:value={selectedDate} on:change={validateDate} />
+
+            <!-- Step 2: Repeated Weekly or One-Time -->
+            {:else if step === 2}
+                <h3>Application Type</h3>
+                <label>
+                    <input type="radio" name="applicationType" value="one-time" checked={applicationType === 'one-time'} on:change={handleApplicationTypeChange} />
+                    One-time application
+                </label>
+                <br />
+                <label>
+                    <input type="radio" name="applicationType" value="weekly" checked={applicationType === 'weekly'} on:change={handleApplicationTypeChange} />
+                    Repeated weekly
+                </label>
+
+                {#if applicationType === 'weekly'}
+                    <div>
+                        <h4>Select Days:</h4>
+                        {#each daysOfWeek as day}
+                            <div class="day-option {selectedDays.includes(day) ? 'selected' : ''}" on:click={() => toggleDay(day)}>
+                                {day}
+                            </div>
+                        {/each}
+                        <p>Selected Days: {selectedDays.join(', ')}</p>
+                    </div>
+                {/if}
+
+            <!-- Step 3: Full Day or Part Day -->
+            {:else if step === 3}
+                <h3>Work Arrangement</h3>
+                <label>
+                    <input type="radio" name="dayOption" value="full-day" checked={selectedDayOption === 'full-day'} on:change={handleDayOptionChange} />
+                    Full Day
+                </label>
+                <br />
+                <label>
+                    <input type="radio" name="dayOption" value="part-day" checked={selectedDayOption === 'part-day'} on:change={handleDayOptionChange} />
+                    Part Day
+                </label>
+
+                {#if showPartDayOptions}
+                    <div class="part-day-options">
+                        <div>
+                            <div class="time-label">08:00 AM - 12:00 PM</div>
+                            <button class="day-option {selectedHalfDay === 'AM' ? 'selected' : ''}" on:click={() => selectHalfDay('AM')}>AM</button>
                         </div>
-                    {/each}
-                    <p>Selected Days: {selectedDays.join(', ')}</p>
-                </div>
+                        <div>
+                            <div class="time-label">12:00 PM - 6:00 PM</div>
+                            <button class="day-option {selectedHalfDay === 'PM' ? 'selected' : ''}" on:click={() => selectHalfDay('PM')}>PM</button>
+                        </div>
+                    </div>
+                {/if}
+
+            <!-- Step 4: Reason -->
+            {:else if step === 4}
+                <h3>Reason</h3>
+                <textarea bind:value={reason} placeholder="Please provide a reason for your WFH request"></textarea>
             {/if}
 
-        <!-- Step 3: Full Day or Part Day -->
-        {:else if step === 3}
-            <h3>Work Arrangement</h3>
-            <label>
-                <input type="radio" name="dayOption" value="full-day" checked={selectedDayOption === 'full-day'} on:change={handleDayOptionChange} />
-                Full Day
-            </label>
-            <br />
-            <label>
-                <input type="radio" name="dayOption" value="part-day" checked={selectedDayOption === 'part-day'} on:change={handleDayOptionChange} />
-                Part Day
-            </label>
-
-            {#if showPartDayOptions}
-                <div class="part-day-options">
-                    <div>
-                        <div class="time-label">08:00 AM - 12:00 PM</div>
-                        <button class="day-option {selectedHalfDay === 'AM' ? 'selected' : ''}" on:click={() => selectHalfDay('AM')}>AM</button>
-                    </div>
-                    <div>
-                        <div class="time-label">12:00 PM - 6:00 PM</div>
-                        <button class="day-option {selectedHalfDay === 'PM' ? 'selected' : ''}" on:click={() => selectHalfDay('PM')}>PM</button>
-                    </div>
-                </div>
-            {/if}
-
-        <!-- Step 4: Reason -->
-        {:else if step === 4}
-            <h3>Reason</h3>
-            <textarea bind:value={reason} placeholder="Please provide a reason for your WFH request"></textarea>
+            <!-- Buttons for Navigation -->
+            <div class="buttons">
+                {#if step > 1}
+                    <button class="back-button" on:click={prevStep}>Back</button>
+                {/if}
+                <button class="next-button" on:click={nextStep}>Next</button>
+            </div>
         {/if}
-
-        <!-- Buttons for Navigation -->
-        <div class="buttons">
-            {#if step > 1}
-                <button class="back-button" on:click={prevStep}>Back</button>
-            {/if}
-            <button class="next-button" on:click={nextStep}>{step === 4 ? 'Submit' : 'Next'}</button>
-        </div>
     </div>
 </div>

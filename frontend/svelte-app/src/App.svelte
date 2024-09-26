@@ -1,3 +1,4 @@
+
 <script>
     import { onDestroy } from 'svelte';
     import scheduleStore from './schedule-store.js'; // Assuming you have a store managing the schedule state
@@ -7,7 +8,7 @@
 
     let showModal = false; // Modal visibility flag, initially hidden
     let schedule = {};
-    let schedulerShowing = false;	
+    let schedulerShowing = false;   
     let dateID = "";
     let dateHeading = "";
 
@@ -122,3 +123,4 @@
         background-color: #45a049;
     }
 </style>
+
