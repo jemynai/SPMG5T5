@@ -74,7 +74,42 @@ def get_arrangements():
             arrangements = db.collection('arrangements').stream()
             parse_arr(arrangements)
         
+        # for each arrangement, date is stored as firebase timestamp. convert to javascript date
+        for arrangement in arrangements_list:
+            arrangement['date'] = arrangement['date'].isoformat()
         return jsonify({"arrangements": arrangements_list}), 200
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@arrangement_bp.route('/update_arrangement', methods=['PUT'])
+def update_arrangement():
+    try:
+        # Get the arrangement data from the request
+        arrangement_data = request.json
+        if not arrangement_data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Get the arrangement document from Firestore
+        arrangement_ref = db.collection('arrangements').document(arrangement_data['id'])
+        
+        # Check if status is still pending (reject if not pending)
+        arrangement_snapshot = arrangement_ref.get()
+        if not arrangement_snapshot.exists:
+            return jsonify({"error": "Arrangement not found"}), 404
+        status = arrangement_snapshot.get('status')
+        if status != 'pending':
+            return jsonify({"error": "Arrangement status must be pending to be updated"}), 400
+        
+        # Update the arrangement document in Firestore
+        arrangement_ref.update({
+            'date': datetime.fromisoformat(arrangement_data.get('date').replace('Z', '+00:00')),
+            'shift': arrangement_data['shift'],
+            'notes': arrangement_data['notes'],
+        })
+
+        return jsonify({"message": "Arrangement updated"}), 200
+
+    except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
