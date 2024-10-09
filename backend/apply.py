@@ -6,8 +6,12 @@ from datetime import datetime
 apply_bp = Blueprint('apply_bp', __name__)
 
 # Route for form submissions
-@apply_bp.route('/submit_application', methods=['POST'])
+@apply_bp.route('/submit_application', methods=['POST', 'OPTIONS'])
 def submit_application():
+    if request.method == 'OPTIONS':
+        return '', 200  # Return OK for preflight check
+    # Your existing POST logic here
+
     try:
         # Get Firestore DB instance
         db = get_db()
