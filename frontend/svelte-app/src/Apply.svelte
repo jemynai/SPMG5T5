@@ -1,25 +1,25 @@
 <script>
-    import { createEventDispatcher } from 'svelte'; // Import event dispatcher
+    import { createEventDispatcher } from "svelte"; // Import event dispatcher
     const dispatch = createEventDispatcher(); // Create an event dispatcher
 
     let step = 1; // Tracks the current step of the process
 
     // Step 1: Date selection
-    let selectedDate = '';
+    let selectedDate = "";
     let isDateValid = false;
 
     // Step 2: Repeated weekly options
-    let applicationType = 'one-time'; // Default is 'one-time'
+    let applicationType = "one-time"; // Default is 'one-time'
     let selectedDays = [];
-    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
     // Step 3: Full/Part day selection
-    let selectedDayOption = 'full-day'; // Default to full day
+    let selectedDayOption = "full-day"; // Default to full day
     let showPartDayOptions = false; // Controls visibility of AM/PM options
-    let selectedHalfDay = ''; // Store 'AM' or 'PM'
+    let selectedHalfDay = ""; // Store 'AM' or 'PM'
 
     // Step 4: Reason input
-    let reason = '';
+    let reason = "";
 
     // Step 5: Review and submit
     let reviewMode = false; // Indicates if we are in review mode
@@ -40,17 +40,25 @@
             return;
         }
         // Validation for step 2 (weekly day selection)
-        if (step === 2 && applicationType === 'weekly' && selectedDays.length === 0) {
+        if (
+            step === 2 &&
+            applicationType === "weekly" &&
+            selectedDays.length === 0
+        ) {
             alert("Please select at least one day.");
             return;
         }
         // Validation for step 3 (Full Day / Part Day)
-        if (step === 3 && selectedDayOption === 'part-day' && !selectedHalfDay) {
+        if (
+            step === 3 &&
+            selectedDayOption === "part-day" &&
+            !selectedHalfDay
+        ) {
             alert("Please select AM or PM for Part Day.");
             return;
         }
         // Validation for step 4 (reason)
-        if (step === 4 && reason.trim() === '') {
+        if (step === 4 && reason.trim() === "") {
             alert("Please provide a reason.");
             return;
         }
@@ -69,14 +77,14 @@
 
     const handleApplicationTypeChange = (e) => {
         applicationType = e.target.value;
-        if (applicationType === 'one-time') {
+        if (applicationType === "one-time") {
             selectedDays = []; // Reset selected days if 'one-time' is selected
         }
     };
 
     const toggleDay = (day) => {
         if (selectedDays.includes(day)) {
-            selectedDays = selectedDays.filter(d => d !== day); // Remove day if already selected
+            selectedDays = selectedDays.filter((d) => d !== day); // Remove day if already selected
         } else if (selectedDays.length < 3) {
             selectedDays = [...selectedDays, day]; // Add day if under the max limit
         } else {
@@ -86,11 +94,11 @@
 
     const handleDayOptionChange = (e) => {
         selectedDayOption = e.target.value;
-        if (selectedDayOption === 'part-day') {
+        if (selectedDayOption === "part-day") {
             showPartDayOptions = true;
         } else {
             showPartDayOptions = false; // Hide AM/PM options if 'Full Day' is selected
-            selectedHalfDay = ''; // Reset AM/PM selection
+            selectedHalfDay = ""; // Reset AM/PM selection
         }
     };
 
@@ -98,17 +106,207 @@
         selectedHalfDay = period;
     };
 
-    // Final submission function
-    const handleSubmit = () => {
-        // You can replace this with an actual API call
-        alert(`Application submitted:\nDate: ${selectedDate}\nType: ${applicationType}\nDays: ${selectedDays.join(', ')}\nTime: ${selectedDayOption === 'full-day' ? 'Full Day' : selectedHalfDay}\nReason: ${reason}`);
-        dispatch('close'); // Close the modal after submission
+    // Final submission function (modified to send data to the Flask backend)
+    const handleSubmit = async () => {
+        const applicationData = {
+            date: selectedDate,
+            type: applicationType,
+            days: selectedDays,
+            halfDay:
+                selectedDayOption === "full-day" ? "Full Day" : selectedHalfDay,
+            reason: reason,
+        };
+
+        try {
+            const response = await fetch(
+                "http://localhost:8080/submit_application",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(applicationData),
+                },
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                alert("Application submitted successfully!");
+                dispatch("close"); // Close the modal after submission
+            } else {
+                const data = await response.json(); // Parse JSON error
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            alert(`Submission failed: ${error.message}`);
+        }
     };
 
     const backToEdit = () => {
         reviewMode = false; // Exit review mode and allow user to go back to the form
     };
 </script>
+
+<!-- Modal Content -->
+<div class="modal-backdrop" on:click={() => dispatch("close")}>
+    <div class="modal-content" on:click|stopPropagation>
+        <button class="close-button" on:click={() => dispatch("close")}
+            >&times;</button
+        >
+
+        <!-- If in review mode, show the review step -->
+        {#if reviewMode}
+            <div class="review-box">
+                <h3>Review your application</h3>
+                <p><strong>Date:</strong> {selectedDate}</p>
+                <p><strong>Application Type:</strong> {applicationType}</p>
+                {#if applicationType === "weekly"}
+                    <p>
+                        <strong>Selected Days:</strong>
+                        {selectedDays.join(", ")}
+                    </p>
+                {/if}
+                <p>
+                    <strong>Time:</strong>
+                    {selectedDayOption === "full-day"
+                        ? "Full Day"
+                        : selectedHalfDay}
+                </p>
+                <p><strong>Reason:</strong> {reason}</p>
+            </div>
+
+            <div class="buttons">
+                <button class="back-button" on:click={backToEdit}
+                    >Back to Edit</button
+                >
+                <button class="next-button" on:click={handleSubmit}
+                    >Submit</button
+                >
+            </div>
+
+            <!-- If not in review mode, show the current form step -->
+        {:else}
+            <!-- Step 1: Date Selection -->
+            {#if step === 1}
+                <h2>Apply for WFH Arrangement</h2>
+                <label for="wfh-date">Select WFH Date:</label>
+                <input
+                    type="date"
+                    id="wfh-date"
+                    bind:value={selectedDate}
+                    on:change={validateDate}
+                />
+
+                <!-- Step 2: Repeated Weekly or One-Time -->
+            {:else if step === 2}
+                <h3>Application Type</h3>
+                <label>
+                    <input
+                        type="radio"
+                        name="applicationType"
+                        value="one-time"
+                        checked={applicationType === "one-time"}
+                        on:change={handleApplicationTypeChange}
+                    />
+                    One-time application
+                </label>
+                <br />
+                <label>
+                    <input
+                        type="radio"
+                        name="applicationType"
+                        value="weekly"
+                        checked={applicationType === "weekly"}
+                        on:change={handleApplicationTypeChange}
+                    />
+                    Repeated weekly
+                </label>
+
+                {#if applicationType === "weekly"}
+                    <div>
+                        <h4>Select Days:</h4>
+                        {#each daysOfWeek as day}
+                            <div
+                                class="day-option {selectedDays.includes(day)
+                                    ? 'selected'
+                                    : ''}"
+                                on:click={() => toggleDay(day)}
+                            >
+                                {day}
+                            </div>
+                        {/each}
+                        <p>Selected Days: {selectedDays.join(", ")}</p>
+                    </div>
+                {/if}
+
+                <!-- Step 3: Full Day or Part Day -->
+            {:else if step === 3}
+                <h3>Work Arrangement</h3>
+                <label>
+                    <input
+                        type="radio"
+                        name="dayOption"
+                        value="full-day"
+                        checked={selectedDayOption === "full-day"}
+                        on:change={handleDayOptionChange}
+                    />
+                    Full Day
+                </label>
+                <br />
+                <label>
+                    <input
+                        type="radio"
+                        name="dayOption"
+                        value="part-day"
+                        checked={selectedDayOption === "part-day"}
+                        on:change={handleDayOptionChange}
+                    />
+                    Part Day
+                </label>
+
+                {#if showPartDayOptions}
+                    <div class="part-day-options">
+                        <div>
+                            <div class="time-label">08:00 AM - 12:00 PM</div>
+                            <button
+                                class="day-option {selectedHalfDay === 'AM'
+                                    ? 'selected'
+                                    : ''}"
+                                on:click={() => selectHalfDay("AM")}>AM</button
+                            >
+                        </div>
+                        <div>
+                            <div class="time-label">12:00 PM - 6:00 PM</div>
+                            <button
+                                class="day-option {selectedHalfDay === 'PM'
+                                    ? 'selected'
+                                    : ''}"
+                                on:click={() => selectHalfDay("PM")}>PM</button
+                            >
+                        </div>
+                    </div>
+                {/if}
+
+                <!-- Step 4: Reason -->
+            {:else if step === 4}
+                <h3>Reason</h3>
+                <textarea
+                    bind:value={reason}
+                    placeholder="Please provide a reason for your WFH request"
+                ></textarea>
+            {/if}
+
+            <!-- Buttons for Navigation -->
+            <div class="buttons">
+                {#if step > 1}
+                    <button class="back-button" on:click={prevStep}>Back</button
+                    >
+                {/if}
+                <button class="next-button" on:click={nextStep}>Next</button>
+            </div>
+        {/if}
+    </div>
+</div>
 
 <style>
     .modal-backdrop {
@@ -149,7 +347,8 @@
         margin-top: 20px;
     }
 
-    .next-button, .back-button {
+    .next-button,
+    .back-button {
         padding: 10px 20px;
         font-size: 16px;
         border: none;
@@ -158,7 +357,7 @@
     }
 
     .next-button {
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
     }
 
@@ -185,7 +384,7 @@
     }
 
     .selected {
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
     }
 
@@ -214,104 +413,4 @@
         border-radius: 4px;
         margin-bottom: 20px;
     }
-
 </style>
-
-<!-- Modal Content -->
-<div class="modal-backdrop" on:click={() => dispatch('close')}>
-    <div class="modal-content" on:click|stopPropagation>
-        <button class="close-button" on:click={() => dispatch('close')}>&times;</button>
-
-        <!-- If in review mode, show the review step -->
-        {#if reviewMode}
-            <div class="review-box">
-                <h3>Review your application</h3>
-                <p><strong>Date:</strong> {selectedDate}</p>
-                <p><strong>Application Type:</strong> {applicationType}</p>
-                {#if applicationType === 'weekly'}
-                    <p><strong>Selected Days:</strong> {selectedDays.join(', ')}</p>
-                {/if}
-                <p><strong>Time:</strong> {selectedDayOption === 'full-day' ? 'Full Day' : selectedHalfDay}</p>
-                <p><strong>Reason:</strong> {reason}</p>
-            </div>
-
-            <div class="buttons">
-                <button class="back-button" on:click={backToEdit}>Back to Edit</button>
-                <button class="next-button" on:click={handleSubmit}>Submit</button>
-            </div>
-
-        <!-- If not in review mode, show the current form step -->
-        {:else}
-            <!-- Step 1: Date Selection -->
-            {#if step === 1}
-                <h2>Apply for WFH Arrangement</h2>
-                <label for="wfh-date">Select WFH Date:</label>
-                <input type="date" id="wfh-date" bind:value={selectedDate} on:change={validateDate} />
-
-            <!-- Step 2: Repeated Weekly or One-Time -->
-            {:else if step === 2}
-                <h3>Application Type</h3>
-                <label>
-                    <input type="radio" name="applicationType" value="one-time" checked={applicationType === 'one-time'} on:change={handleApplicationTypeChange} />
-                    One-time application
-                </label>
-                <br />
-                <label>
-                    <input type="radio" name="applicationType" value="weekly" checked={applicationType === 'weekly'} on:change={handleApplicationTypeChange} />
-                    Repeated weekly
-                </label>
-
-                {#if applicationType === 'weekly'}
-                    <div>
-                        <h4>Select Days:</h4>
-                        {#each daysOfWeek as day}
-                            <div class="day-option {selectedDays.includes(day) ? 'selected' : ''}" on:click={() => toggleDay(day)}>
-                                {day}
-                            </div>
-                        {/each}
-                        <p>Selected Days: {selectedDays.join(', ')}</p>
-                    </div>
-                {/if}
-
-            <!-- Step 3: Full Day or Part Day -->
-            {:else if step === 3}
-                <h3>Work Arrangement</h3>
-                <label>
-                    <input type="radio" name="dayOption" value="full-day" checked={selectedDayOption === 'full-day'} on:change={handleDayOptionChange} />
-                    Full Day
-                </label>
-                <br />
-                <label>
-                    <input type="radio" name="dayOption" value="part-day" checked={selectedDayOption === 'part-day'} on:change={handleDayOptionChange} />
-                    Part Day
-                </label>
-
-                {#if showPartDayOptions}
-                    <div class="part-day-options">
-                        <div>
-                            <div class="time-label">08:00 AM - 12:00 PM</div>
-                            <button class="day-option {selectedHalfDay === 'AM' ? 'selected' : ''}" on:click={() => selectHalfDay('AM')}>AM</button>
-                        </div>
-                        <div>
-                            <div class="time-label">12:00 PM - 6:00 PM</div>
-                            <button class="day-option {selectedHalfDay === 'PM' ? 'selected' : ''}" on:click={() => selectHalfDay('PM')}>PM</button>
-                        </div>
-                    </div>
-                {/if}
-
-            <!-- Step 4: Reason -->
-            {:else if step === 4}
-                <h3>Reason</h3>
-                <textarea bind:value={reason} placeholder="Please provide a reason for your WFH request"></textarea>
-            {/if}
-
-            <!-- Buttons for Navigation -->
-            <div class="buttons">
-                {#if step > 1}
-                    <button class="back-button" on:click={prevStep}>Back</button>
-                {/if}
-                <button class="next-button" on:click={nextStep}>Next</button>
-            </div>
-        {/if}
-    </div>
-</div>
