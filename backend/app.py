@@ -2,7 +2,7 @@ from flask import Flask
 from users import users_bp
 from arrangements import arrangement_bp
 from withdrawals import withdrawal_bp
-from mngr_view_ttbl import mngr_view_bp 
+from mngr_view_ttbl import mngr_view_bp
 from apply import apply_bp 
 from flask_cors import CORS
 
