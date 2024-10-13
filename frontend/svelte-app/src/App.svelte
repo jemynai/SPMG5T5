@@ -1,8 +1,5 @@
 <script>
     import { onDestroy } from 'svelte';
-    import { wrap } from 'svelte-spa-router/wrap';
-    import { Router } from 'svelte-spa-router';
-    
     import scheduleStore from './schedule-store.js'; // Store managing schedule state
     import Calendar from './Calendar.svelte';
     import Scheduler from './Scheduler.svelte';
@@ -98,8 +95,7 @@
 <main>
  
     
-    <!-- Router to manage different views -->
-    <Router {routes}/>
+
 
     <!-- Scheduler shows when user clicks a date in the calendar -->
     {#if schedulerShowing}
