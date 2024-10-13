@@ -1,16 +1,19 @@
-
 <script>
     import { onDestroy } from 'svelte';
-    import scheduleStore from './schedule-store.js'; // Assuming you have a store managing the schedule state
+    import scheduleStore from './schedule-store.js'; // Store managing schedule state
     import Calendar from './Calendar.svelte';
     import Scheduler from './Scheduler.svelte';
-    import ApplyModal from './Apply.svelte'; // Import the modal component
+    import ApplyModal from './Apply.svelte';
+    import Arrangements from './Arrangements.svelte'; // Arrangements page
+    import WithdrawalRequest from './WithdrawalRequest.svelte'; // Withdrawal request page
 
     let showModal = false; // Modal visibility flag, initially hidden
     let schedule = {};
     let schedulerShowing = false;   
     let dateID = "";
     let dateHeading = "";
+    let appointments = []; // Declare appointments variable
+
 
     // Function to open the modal
     const openModal = () => {
@@ -80,11 +83,19 @@
             });
         }
     };
+
+    // Set up routes for different pages
+    const routes = {
+        '/': Calendar, // Default route to the calendar
+        '/arrangements': Arrangements, // View for managing user arrangements
+        '/withdrawal-request': WithdrawalRequest, // View for managing withdrawal requests
+    };
 </script>
 
 <main>
-    <!-- Display Calendar -->
-    <Calendar on:click={handleScheduler} {schedule} />
+ 
+    
+
 
     <!-- Scheduler shows when user clicks a date in the calendar -->
     {#if schedulerShowing}
@@ -123,4 +134,3 @@
         background-color: #45a049;
     }
 </style>
-
