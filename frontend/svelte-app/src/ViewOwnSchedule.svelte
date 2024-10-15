@@ -3,7 +3,8 @@
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
 	// event-calendar code
-	const current_user = "130002";
+	let current_user = '130002'
+	console.log(current_user)
 	let plugins = [DayGrid];
     let options = {
         events: []
@@ -45,29 +46,37 @@
 	// 	}
 	// };
 
-	onMount(async () => {
+	async function fetchArrangements() {
     	try {
-      		const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=130002`);
+      		const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`);
       		if (!response.ok) {
         		throw new Error('Failed to fetch data');
       		}
-      		const data = await response.json();
+      	const data = await response.json();
 
-      		arrangementsArray.push(...data.arrangements)
+		// Reset arrays before pushing new data
+		arrangementsArray = [];
+		options.events = [];
+
+		arrangementsArray.push(...data.arrangements);
+		for (let a of arrangementsArray) {
+			let arrangementDate = new Date(Date.parse(a.date));
+			options.events.push({
+				title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
+				start: arrangementDate,
+				end: arrangementDate,
+				allDay: true
+			});
+		}
 			arrangementsArray = [...arrangementsArray];
-      		for (let a of arrangementsArray) {
-        		let arrangementDate = new Date(Date.parse(a.date));
-        		options.events.push({
-          			title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
-          			start: arrangementDate,
-          			end: arrangementDate,
-          			allDay: true
-				});
-      		}
 			options.events = [...options.events];
-    	} catch (error) {
-      		console.error('Error fetching data:', error);
-    	}
+		} catch (error) {
+			console.error('Error fetching data:', error);
+		}
+	}
+
+	onMount(() => {
+    	fetchArrangements();
   	});
 
 	// function populateCalendar (arrangements) {
@@ -104,6 +113,13 @@
 
 <main>
 	<h1>Work From Home Arrangements</h1>
+	<div>
+		<p>Current user:</p>
+		<select id="current_user" on:change="{(event) => {current_user = event.target.value; fetchArrangements();}}">
+			<option value="130002">130002</option>
+			<option value="130010">130010</option>
+		</select>
+	</div>
 	<Calendar {plugins} {options} />
 	<ul>
 		{#each arrangementsArray as arrangement}
