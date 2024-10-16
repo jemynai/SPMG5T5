@@ -35,6 +35,9 @@ def submit_application():
             'created_at': created_at
         })
 
+    
+
+        
         return jsonify({"message": "Application submitted successfully"}), 200
 
     except Exception as e:

@@ -1,36 +1,32 @@
 <script>
-    import { onDestroy } from 'svelte';
-    import scheduleStore from './schedule-store.js'; // Store managing schedule state
-    import Calendar from './Calendar.svelte';
-    import Scheduler from './Scheduler.svelte';
-    import ApplyModal from './Apply.svelte';
-    import Arrangements from './Arrangements.svelte'; // Arrangements page
-    import WithdrawalRequest from './WithdrawalRequest.svelte'; // Withdrawal request page
+    import { onDestroy } from "svelte";
+    import Router from "svelte-spa-router"; // Correct Router import
+    import scheduleStore from "./schedule-store.js";
+    import Calendar from "./Calendar.svelte";
+    import Scheduler from "./Scheduler.svelte";
+    import ApplyModal from "./Apply.svelte";
+    import Arrangements from "./Arrangements.svelte";
+    import WithdrawalRequest from "./WithdrawalRequest.svelte";
 
-    let showModal = false; // Modal visibility flag, initially hidden
+    let showModal = false;
     let schedule = {};
-    let schedulerShowing = false;   
+    let schedulerShowing = false;
     let dateID = "";
     let dateHeading = "";
-    let appointments = []; // Declare appointments variable
+    let appointments = [];
 
-
-    // Function to open the modal
     const openModal = () => {
-        showModal = true; // Set modal to visible when "Apply" is clicked
+        showModal = true;
     };
 
-    // Function to close the modal (passed down to Apply.svelte)
     const closeModal = () => {
-        showModal = false; // Set modal to hidden
+        showModal = false;
     };
 
-    // Subscribe to the schedule store
-    const unsubscribe = scheduleStore.subscribe(currState => {
+    const unsubscribe = scheduleStore.subscribe((currState) => {
         schedule = currState;
     });
 
-    // Clean up when component is destroyed
     onDestroy(() => {
         if (unsubscribe) unsubscribe();
     });
@@ -44,12 +40,16 @@
     const makeDateHeading = () => {
         let dateAsHeading = dateID.replace(/_/g, " ");
         let date = new Date(`${dateAsHeading}`);
-        return dateHeading = date.toLocaleString("en-US", { day: 'numeric', month: 'long', year: 'numeric' });
+        return (dateHeading = date.toLocaleString("en-US", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }));
     };
 
     const removeEmptyDate = () => {
         if (schedule[dateID] && schedule[dateID].length === 0) {
-            scheduleStore.update(currDataState => {
+            scheduleStore.update((currDataState) => {
                 delete currDataState[dateID];
                 return currDataState;
             });
@@ -62,21 +62,21 @@
     };
 
     const setApptToSch = (e) => {
-        let time = `${e.detail.hour}:${e.detail.minutes < 10 ? '0' + e.detail.minutes : e.detail.minutes}${e.detail.amOrPM}`;
+        let time = `${e.detail.hour}:${e.detail.minutes < 10 ? "0" + e.detail.minutes : e.detail.minutes}${e.detail.amOrPM}`;
         let newAppt = {
             id: Math.floor(Math.random() * 1000000),
             eventname: e.detail.eventName,
             time: time === ":0" ? "no time set" : time,
-            completed: false
+            completed: false,
         };
 
         if (!schedule[dateID]) {
-            scheduleStore.update(currState => { 
-                currState[dateID] = [newAppt]; 
+            scheduleStore.update((currState) => {
+                currState[dateID] = [newAppt];
                 return currState;
             });
         } else {
-            scheduleStore.update(currState => {
+            scheduleStore.update((currState) => {
                 let currDayAppts = currState[dateID];
                 currState[dateID] = [...currDayAppts, newAppt];
                 return currState;
@@ -84,32 +84,39 @@
         }
     };
 
-    // Set up routes for different pages
+    // Define routes for different pages
     const routes = {
-        '/': Calendar, // Default route to the calendar
-        '/arrangements': Arrangements, // View for managing user arrangements
-        '/withdrawal-request': WithdrawalRequest, // View for managing withdrawal requests
+        "/calendar": Calendar,
+        "/arrangements": Arrangements,
+        "/withdrawal-request": WithdrawalRequest,
+        "/apply": ApplyModal,
     };
 </script>
 
 <main>
- 
+    <nav>
+        <a href="/calendar">Calendar</a> <!-- Changed from "/" to "/calendar" -->
+        <a href="/arrangements">Arrangements</a>
+        <a href="/withdrawal-request">Withdrawals</a>
+        <a href="/apply">Apply</a>
+    </nav>
     
 
+    <!-- Router to handle page navigation -->
+    <Router {routes} />
 
-    <!-- Scheduler shows when user clicks a date in the calendar -->
     {#if schedulerShowing}
-        <Scheduler on:modalClose={closeScheduler}
-                   on:addAppt={setApptToSch}
-                   {dateID}
-                   {dateHeading}
-                   {appointments} />
+        <Scheduler
+            on:modalClose={closeScheduler}
+            on:addAppt={setApptToSch}
+            {dateID}
+            {dateHeading}
+            {appointments}
+        />
     {/if}
 
-    <!-- Apply Button on the Front Page -->
     <button class="apply-button" on:click={openModal}>Apply</button>
 
-    <!-- The Apply Modal component (conditionally rendered based on showModal) -->
     {#if showModal}
         <ApplyModal on:close={closeModal} />
     {/if}
@@ -123,7 +130,7 @@
     .apply-button {
         padding: 10px 20px;
         font-size: 18px;
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
         border: none;
         border-radius: 5px;
@@ -132,5 +139,20 @@
 
     .apply-button:hover {
         background-color: #45a049;
+    }
+
+    nav {
+        margin-bottom: 20px;
+    }
+
+    nav a {
+        margin-right: 10px;
+        color: #007bff;
+        text-decoration: none;
+        font-size: 16px;
+    }
+
+    nav a:hover {
+        text-decoration: underline;
     }
 </style>

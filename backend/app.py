@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask,request
 from users import users_bp
 from arrangements import arrangement_bp
 from withdrawals import withdrawal_bp
@@ -9,9 +9,10 @@ from apply import apply_bp
 from flask_cors import CORS
 
 
+
 app = Flask(__name__)
 
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Register all blueprints
 app.register_blueprint(users_bp)
@@ -24,5 +25,10 @@ app.register_blueprint(employee_view_own_bp)
 
 # if mac has issue running, change to port 8000
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='127.0.0.1',port=8080,debug=True)
+
+@app.before_request
+def log_request_info():
+    print('Headers: %s', request.headers)
+    print('Body: %s', request.get_data())    
 
