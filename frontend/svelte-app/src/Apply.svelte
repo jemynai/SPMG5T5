@@ -115,11 +115,12 @@
             halfDay:
                 selectedDayOption === "full-day" ? "Full Day" : selectedHalfDay,
             reason: reason,
+            status: "Pending",
         };
 
         try {
             const response = await fetch(
-                "http://127.0.0.1:5000/submit_application",
+                "http://127.0.0.1:8080/submit_application",
                 {
                     method: "POST",
                     headers: {
