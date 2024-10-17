@@ -1,38 +1,70 @@
 <script>
     import { onMount } from "svelte";
-    let withdrawals = [];
+    let withdrawalRequests = [];
+    let current_user = "130002"; // Current user ID, change this as needed
 
-    async function fetchWithdrawalRequests() {
+    // Fetch the arrangements made by the current user for potential withdrawal
+    async function fetchArrangementsForWithdrawal() {
         try {
-            const response = await fetch("http://localhost:5000/get_withdrawal_requests");
+            const response = await fetch(`http://localhost:8080/get_user_arrangements?eid=${current_user}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch arrangements');
+            }
             const data = await response.json();
-            withdrawals = data.withdrawals;
+            withdrawalRequests = data.arrangements || [];
         } catch (err) {
-            console.error("Error fetching withdrawal requests:", err);
+            console.error("Error fetching arrangements:", err);
         }
     }
 
-    async function handleWithdrawal(arrangementId, decision) {
+    // Handle withdrawal request
+    async function submitWithdrawalRequest(arrangementId) {
         try {
-            const response = await fetch(`http://localhost:5000/handle_withdrawal/${arrangementId}`, {
+            const response = await fetch(`http://localhost:8080/submit_withdrawal_request/${arrangementId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ decision })
+                body: JSON.stringify({ eid: current_user }) // Send current user ID with the request
             });
+
             const result = await response.json();
             alert(result.message);
-            fetchWithdrawalRequests(); // Refresh the list
+            fetchArrangementsForWithdrawal(); // Refresh the list after submitting a request
         } catch (err) {
-            console.error("Error handling withdrawal:", err);
+            console.error("Error submitting withdrawal request:", err);
         }
     }
 
-    onMount(fetchWithdrawalRequests);
+    // Fetch the current user's arrangements when the component mounts
+    onMount(fetchArrangementsForWithdrawal);
 </script>
 
+<h1>Withdraw Arrangement Requests</h1>
+<!-- Display arrangements that the user can request to withdraw -->
+{#if withdrawalRequests.length > 0}
+    {#each withdrawalRequests as arrangement}
+        <div class="withdrawal-card">
+            <p><strong>Employee:</strong> {arrangement.employee_id}</p>
+            <p><strong>Date:</strong> {new Date(Date.parse(arrangement.date)).toLocaleDateString()}</p>
+            <p><strong>Shift:</strong> {arrangement.shift.toUpperCase()}</p>
+            <p><strong>Status:</strong> {arrangement.status}</p>
+            {#if arrangement.status === 'pending'}
+                <button on:click={() => submitWithdrawalRequest(arrangement.id)}>Request Withdrawal</button>
+            {:else}
+                <p>This arrangement is no longer pending and cannot be withdrawn.</p>
+            {/if}
+        </div>
+    {/each}
+{:else}
+    <p>No arrangements available for withdrawal.</p>
+{/if}
+
 <style>
+    h1 {
+        text-align: center;
+        color: #4CAF50;
+    }
     .withdrawal-card {
         border: 1px solid #ccc;
         padding: 1rem;
@@ -40,34 +72,16 @@
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    .action-buttons {
-        margin-top: 1rem;
-    }
     button {
-        background-color: #4CAF50;
+        background-color: #f44336;
         color: white;
         padding: 10px 20px;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-    }
-    button.reject {
-        background-color: #f44336;
+        margin-top: 1rem;
     }
     button:hover {
         opacity: 0.8;
     }
 </style>
-
-<h1>Withdrawal Requests</h1>
-{#each withdrawals as withdrawal}
-    <div class="withdrawal-card">
-        <p>Employee: {withdrawal.employee_id}</p>
-        <p>Date: {new Date(withdrawal.date.seconds * 1000).toLocaleDateString()}</p>
-        <p>Status: {withdrawal.status}</p>
-        <div class="action-buttons">
-            <button on:click={() => handleWithdrawal(withdrawal.id, 'accept')}>Accept</button>
-            <button class="reject" on:click={() => handleWithdrawal(withdrawal.id, 'reject')}>Reject</button>
-        </div>
-    </div>
-{/each}
