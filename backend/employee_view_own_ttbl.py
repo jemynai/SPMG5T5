@@ -1,18 +1,16 @@
 from flask import Blueprint, request, jsonify
 from firebase import get_db
 
-db = get_db()
-
 # Define a blueprint for employee view timetable
 employee_view_own_bp = Blueprint('employee_view_own', __name__)
 
 @employee_view_own_bp.route('/employee_view_own_ttbl', methods=['GET'])
 def get_employee_arrangements():
-    # Get all employee_ids from query params
-    employee_ids = request.args.getlist("eid")
-    if not employee_ids:
-        return jsonify({"error": "No employee IDs provided."}), 400  # Bad Request if no IDs
-    employee_id = employee_ids[0]
+    db = get_db()
+    # Get employee_id from query params
+    employee_id = request.args.get("eid")
+    if not employee_id:
+        return jsonify({"error": "No employee id provided."}), 400  # Bad Request if no id
     
     arrangements_list = []
     def parse_arr(arr):

@@ -4,47 +4,21 @@
     import DayGrid from '@event-calendar/day-grid';
 	// event-calendar code
 	let current_user = '130002'
-	console.log(current_user)
 	let plugins = [DayGrid];
     let options = {
-        events: []
+        events: [],
+		eventClick: function(info) {
+			// Populate modal with event details
+			document.getElementById('modalEventTitle').innerText = formatDate(info.event.start)
+			document.getElementById('modalEventDetails').innerText = info.event.title.slice(-6) + " for employee no. " + info.event.title.slice(0,6)
+			// Display the modal
+			document.getElementById('eventModal').style.display = 'block';
+    	},
 	};
+	function closeModal() {
+		document.getElementById('eventModal').style = 'display:none;'
+	}
 	let arrangementsArray = [];
-	// let arrangementsArray = [];
-
-	// hardcoded example data, replace with Firebase data when I figure out how 
-	// let arrangements = {
-	// 	'2ayHkqtidVyAylFq9a45':
-	// 	{
-	// 		created_at: '19 September 2024 at 22:01:16 UTC+8',
-	// 		date: '24 September 2024 at 08:00:00 UTC+8',
-	// 		employee_id: "130002",
-	// 		notes: null,
-	// 		shift: "pm",
-	// 		status: "pending",
-	// 		supervisors: ['1']
-	// 	},
-	// 	'IHWIRbpeg5v4pbfhCx47': 
-	// 	{
-	// 		created_at: '19 September 2024 at 22:01:13 UTC+8',
-	// 		date: '23 September 2024 at 08:00:00 UTC+8',
-	// 		employee_id: "130002",
-	// 		notes: null,
-	// 		shift: "pm",
-	// 		status: "pending",
-	// 		supervisors: ['1']
-	// 	},
-	// 	cSUg8b3bctSYToO2ej41:
-	// 	{
-	// 		created_at: '19 September 2024 at 22:01:23 UTC+8',
-	// 		date: '24 September 2024 at 08:00:00 UTC+8',
-	// 		employee_id: "130010",
-	// 		notes: null,
-	// 		shift: "pm",
-	// 		status: "pending",
-	// 		supervisors: ['1']
-	// 	}
-	// };
 
 	async function fetchArrangements() {
     	try {
@@ -79,22 +53,7 @@
     	fetchArrangements();
   	});
 
-	// function populateCalendar (arrangements) {
-	// let arrangementsArray = Object.values(arrangements)
-	// for (let arrangement of arrangementsArray) {
-	// 	let arrangementDate = new Date(Date.parse(arrangement.date))
-	// 	options.events.push(
-	// 		{
-	// 			title: arrangement.employee_id + ": " + arrangement.shift.toUpperCase() + " WFH",
-	// 			start: arrangementDate,
-	// 			end: arrangementDate,
-	// 			allDay: true
-	// 		},
-	// 	)
-	// }
-
 	function formatDate(date) {
-    // Get the day, month and year from the date string
 		let dateObj = new Date(Date.parse(date))
 		let day = dateObj.getDate(); // Gets the day of the month (1-31)
 		let month = dateObj.getMonth() + 1; // Gets the month (0-11) and add 1 to make it (1-12)
@@ -129,6 +88,13 @@
 			</li>
 		{/each}
 	</ul>
+	<div id="eventModal" class="modal" style="display:none;">
+		<div class="modal-content">
+			<span class="close-button" on:click="{closeModal}">&times;</span>
+			<h2><span id="modalEventTitle"></span></h2>
+			<p id="modalEventDetails"></p>
+		</div>
+	</div>
 </main>
 
 <style>
@@ -157,5 +123,40 @@
 		main {
 			max-width: none;
 		}
+	}
+
+	.modal {
+		display: none; /* Hidden by default */
+		position: fixed; /* Stay in place */
+		z-index: 1; /* Sit on top */
+		left: 0;
+		top: 0;
+		width: 100%; /* Full width */
+		height: 100%; /* Full height */
+		overflow: auto; /* Enable scroll if needed */
+		background-color: rgb(0,0,0); /* Fallback color */
+		background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+	}
+
+	.modal-content {
+		background-color: #fefefe;
+		margin: 15% auto; /* 15% from the top and centered */
+		padding: 20px;
+		border: 1px solid #888;
+		width: 80%; /* Could be more or less, depending on screen size */
+	}
+
+	.close-button {
+		color: #aaa;
+		float: right;
+		font-size: 28px;
+		font-weight: bold;
+	}
+
+	.close-button:hover,
+	.close-button:focus {
+		color: black;
+		text-decoration: none;
+		cursor: pointer;
 	}
 </style>
