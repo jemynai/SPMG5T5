@@ -1,8 +1,5 @@
 <script>
     import { onDestroy } from 'svelte';
-    import scheduleStore from './schedule-store.js'; // Store managing schedule state
-    import Calendar from './Calendar.svelte';
-    import Scheduler from './Scheduler.svelte';
     import ApplyModal from './Apply.svelte';
     import Arrangements from './Arrangements.svelte'; // Arrangements page
     import WithdrawalRequest from './WithdrawalRequest.svelte'; // Withdrawal request page
