@@ -1,114 +1,63 @@
 <script>
-    import { onDestroy } from 'svelte';
     import ApplyModal from './Apply.svelte';
-    import Arrangements from './Arrangements.svelte'; // Arrangements page
-    import WithdrawalRequest from './WithdrawalRequest.svelte'; // Withdrawal request page
+    import Arrangements from './Arrangements.svelte';
+    import WithdrawalRequest from './WithdrawalRequest.svelte';
+    import HRViewTimetable from './HRViewTimetable.svelte';
+    import ViewOwnSchedule from './ViewOwnSchedule.svelte';
+    import { writable } from 'svelte/store'; // To manage route state
 
-    let showModal = false; // Modal visibility flag, initially hidden
-    let schedule = {};
-    let schedulerShowing = false;   
-    let dateID = "";
-    let dateHeading = "";
-    let appointments = []; // Declare appointments variable
+    let showModal = false;
+    const openModal = () => { showModal = true; };
+    const closeModal = () => { showModal = false; };
 
-
-    // Function to open the modal
-    const openModal = () => {
-        showModal = true; // Set modal to visible when "Apply" is clicked
-    };
-
-    // Function to close the modal (passed down to Apply.svelte)
-    const closeModal = () => {
-        showModal = false; // Set modal to hidden
-    };
-
-    // Subscribe to the schedule store
-    const unsubscribe = scheduleStore.subscribe(currState => {
-        schedule = currState;
-    });
-
-    // Clean up when component is destroyed
-    onDestroy(() => {
-        if (unsubscribe) unsubscribe();
-    });
-
-    const handleScheduler = (e) => {
-        schedulerShowing = true;
-        dateID = e.target.dataset.dateid;
-        makeDateHeading();
-    };
-
-    const makeDateHeading = () => {
-        let dateAsHeading = dateID.replace(/_/g, " ");
-        let date = new Date(`${dateAsHeading}`);
-        return dateHeading = date.toLocaleString("en-US", { day: 'numeric', month: 'long', year: 'numeric' });
-    };
-
-    const removeEmptyDate = () => {
-        if (schedule[dateID] && schedule[dateID].length === 0) {
-            scheduleStore.update(currDataState => {
-                delete currDataState[dateID];
-                return currDataState;
-            });
-        }
-    };
-
-    const closeScheduler = () => {
-        schedulerShowing = false;
-        removeEmptyDate();
-    };
-
-    const setApptToSch = (e) => {
-        let time = `${e.detail.hour}:${e.detail.minutes < 10 ? '0' + e.detail.minutes : e.detail.minutes}${e.detail.amOrPM}`;
-        let newAppt = {
-            id: Math.floor(Math.random() * 1000000),
-            eventname: e.detail.eventName,
-            time: time === ":0" ? "no time set" : time,
-            completed: false
-        };
-
-        if (!schedule[dateID]) {
-            scheduleStore.update(currState => { 
-                currState[dateID] = [newAppt]; 
-                return currState;
-            });
-        } else {
-            scheduleStore.update(currState => {
-                let currDayAppts = currState[dateID];
-                currState[dateID] = [...currDayAppts, newAppt];
-                return currState;
-            });
-        }
-    };
-
-    // Set up routes for different pages
     const routes = {
-        '/': Calendar, // Default route to the calendar
-        '/arrangements': Arrangements, // View for managing user arrangements
-        '/withdrawal-request': WithdrawalRequest, // View for managing withdrawal requests
+        '/arrangements': Arrangements,
+        '/withdrawal-request': WithdrawalRequest,
+        '/hr-view-timetable': HRViewTimetable,
+        '/view-own-schedule': ViewOwnSchedule // Added route for the ViewOwnSchedule component
+    };
+
+    // Writable store for current route
+    let currentRoute = writable('/'); // Default to home or any route you want
+
+    // Function to navigate to different routes
+    const navigateTo = (route) => {
+        currentRoute.set(route);
     };
 </script>
 
 <main>
- 
-    
-
-
-    <!-- Scheduler shows when user clicks a date in the calendar -->
-    {#if schedulerShowing}
-        <Scheduler on:modalClose={closeScheduler}
-                   on:addAppt={setApptToSch}
-                   {dateID}
-                   {dateHeading}
-                   {appointments} />
-    {/if}
-
-    <!-- Apply Button on the Front Page -->
+    <!-- Button to open the modal -->
     <button class="apply-button" on:click={openModal}>Apply</button>
 
-    <!-- The Apply Modal component (conditionally rendered based on showModal) -->
+    <!-- Modal for applying (conditionally rendered) -->
     {#if showModal}
         <ApplyModal on:close={closeModal} />
+    {/if}
+
+    <!-- Navigation Buttons (Example) -->
+    <nav>
+        <button on:click={() => navigateTo('/view-own-schedule')}>View Own Schedule</button>
+        <button on:click={() => navigateTo('/arrangements')}>Arrangements</button>
+        <button on:click={() => navigateTo('/withdrawal-request')}>Withdrawal Request</button>
+        <button on:click={() => navigateTo('/hr-view-timetable')}>HR Timetable</button>
+    </nav>
+
+    <!-- Render the current component based on route -->
+    {#if $currentRoute === '/view-own-schedule'}
+        <ViewOwnSchedule />
+    {/if}
+
+    {#if $currentRoute === '/arrangements'}
+        <Arrangements />
+    {/if}
+
+    {#if $currentRoute === '/withdrawal-request'}
+        <WithdrawalRequest />
+    {/if}
+
+    {#if $currentRoute === '/hr-view-timetable'}
+        <HRViewTimetable />
     {/if}
 </main>
 
@@ -129,5 +78,15 @@
 
     .apply-button:hover {
         background-color: #45a049;
+    }
+
+    nav {
+        margin-top: 20px;
+    }
+
+    nav button {
+        margin: 5px;
+        padding: 10px;
+        font-size: 16px;
     }
 </style>
