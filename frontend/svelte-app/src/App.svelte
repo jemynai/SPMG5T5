@@ -3,6 +3,7 @@
     import Arrangements from './Arrangements.svelte';
     import WithdrawalRequest from './WithdrawalRequest.svelte';
     import HRViewTimetable from './HRViewTimetable.svelte';
+    import ManagerTimetable from './ManagerTimetable.svelte';
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
     import { writable } from 'svelte/store'; // To manage route state
 
