@@ -6,6 +6,7 @@
     import ApplyModal from './Apply.svelte';
     import Arrangements from './Arrangements.svelte'; // Arrangements page
     import WithdrawalRequest from './WithdrawalRequest.svelte'; // Withdrawal request page
+    import ManageUsers from './ManageUsers.svelte';
 
     let showModal = false; // Modal visibility flag, initially hidden
     let schedule = {};
@@ -93,6 +94,7 @@
 </script>
 
 <main>
+    <ManageUsers />
  
     
 

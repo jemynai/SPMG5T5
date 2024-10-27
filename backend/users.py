@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from firebase import get_db
+from hr import *
 
 db = get_db()
 
@@ -164,6 +165,31 @@ def delete_all_users():
         if count % 500 != 0: batch.commit()
         
         return jsonify({"message": f"Deleted {count} users"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@users_bp.route('/update_user_role', methods=["PUT"])
+def update_user_role():
+    try:
+        # Get the user data from the request
+        user_data = request.json
+        if not user_data:
+            return jsonify({"error": "No data provided"}), 400
+        
+        emp_repo = EmployeeRepository(db)
+        employee = emp_repo.get_employee(user_data['id'])
+        print(employee.to_dict())
+        roles = {
+            "2": "employee",
+            "3": "manager",
+            "1": "hr"
+        }
+        HR.set_employee_role(employee, roles[user_data['role']])
+        
+        emp_repo.update_employee(employee)
+        
+        return jsonify({"message": "User role updated", "user_id": user_data['id']}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
