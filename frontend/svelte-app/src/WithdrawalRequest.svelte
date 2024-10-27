@@ -1,9 +1,8 @@
 <script>
     import { onMount } from "svelte";
     let withdrawalRequests = [];
-    let current_user = "130002"; // Current user ID, change this as needed
+    let current_user = ""; 
 
-    // Fetch the arrangements made by the current user for potential withdrawal
     async function fetchArrangementsForWithdrawal() {
         try {
             const response = await fetch(`http://localhost:8080/get_user_arrangements?eid=${current_user}`);
