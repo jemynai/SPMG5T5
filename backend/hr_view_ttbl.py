@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from functools import wraps
 import firebase_admin
 from firebase_admin import auth
 
 # Initialize Firestore database
-db = get_db()
+db = Firebase().get_db()
 
 # Define a blueprint for HR view timetable
 hr_view_bp = Blueprint('hr_view', __name__)

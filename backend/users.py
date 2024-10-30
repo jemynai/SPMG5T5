@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 
-db = get_db()
+db = Firebase().get_db()
 
 # Define a blueprint for user-related routes
 users_bp = Blueprint('users', __name__)

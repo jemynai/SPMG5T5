@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 
-db = get_db()
+db = Firebase().get_db()
 
 # Define a blueprint for manager view timetable
 mngr_view_bp = Blueprint('mngr_view', __name__)
