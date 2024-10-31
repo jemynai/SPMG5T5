@@ -1,12 +1,6 @@
-import requests
 from typing import List, Dict, Optional
-from firebase_admin import credentials, firestore, initialize_app
+from firebase_admin import credentials, firestore
 from datetime import datetime
-
-# Initialize Firebase Admin
-cred = credentials.Certificate('path/to/your/serviceAccountKey.json')
-firebase_app = initialize_app(cred)
-db = firestore.client()
 
 class Employee:
     def __init__(self, user_id: str, name: str, email: str, role: str, managers: List[str], 
@@ -43,8 +37,7 @@ class Employee:
             'lastUpdated': datetime.now()
         }
     
-    def save_to_firebase(self):
-        """Save employee data to Firebase"""
+    def save_to_firebase(self, db):
         try:
             db.collection('employees').document(self.user_id).set(self.to_dict())
             return True
@@ -52,8 +45,7 @@ class Employee:
             print(f"Error saving employee to Firebase: {str(e)}")
             return False
     
-    def update_status(self, new_status: str):
-        """Update employee status in Firebase"""
+    def update_status(self, db, new_status: str):
         try:
             self.status = new_status
             db.collection('employees').document(self.user_id).update({
@@ -65,8 +57,7 @@ class Employee:
             print(f"Error updating employee status: {str(e)}")
             return False
 
-    def view_arrangements(self) -> List[Dict]:
-        """View employee's arrangements from Firebase"""
+    def view_arrangements(self, db) -> List[Dict]:
         try:
             arrangements = db.collection('arrangements')\
                            .where('employee_id', '==', self.user_id)\
@@ -101,8 +92,7 @@ class Manager(Employee):
         data['team'] = self.team
         return data
 
-    def view_team_arrangements(self, status_filter: Optional[str] = None) -> List[Dict]:
-        """View team arrangements from Firebase"""
+    def view_team_arrangements(self, db, status_filter: Optional[str] = None) -> List[Dict]:
         try:
             query = db.collection('arrangements')\
                      .where('department', '==', self.department)
@@ -116,8 +106,7 @@ class Manager(Employee):
             print(f"Error viewing team arrangements: {str(e)}")
             return []
 
-    def update_arrangement_status(self, arrangement_id: str, new_status: str) -> bool:
-        """Update arrangement status in Firebase"""
+    def update_arrangement_status(self, db, arrangement_id: str, new_status: str) -> bool:
         try:
             db.collection('arrangements').document(arrangement_id).update({
                 'status': new_status,
@@ -130,8 +119,7 @@ class Manager(Employee):
             return False
 
 class HR(Employee):
-    def view_employee_list(self, department_filter: Optional[str] = None) -> List[Dict]:
-        """View all employees from Firebase with optional department filter"""
+    def view_employee_list(self, db, department_filter: Optional[str] = None) -> List[Dict]:
         try:
             query = db.collection('employees')
             if department_filter:
@@ -143,8 +131,7 @@ class HR(Employee):
             print(f"Error viewing employee list: {str(e)}")
             return []
 
-    def edit_employee_role(self, employee_id: str, new_role: str) -> bool:
-        """Update employee role in Firebase"""
+    def edit_employee_role(self, db, employee_id: str, new_role: str) -> bool:
         try:
             db.collection('employees').document(employee_id).update({
                 'role': new_role,
@@ -156,8 +143,7 @@ class HR(Employee):
             print(f"Error updating employee role: {str(e)}")
             return False
 
-    def get_department_stats(self) -> Dict:
-        """Get department statistics from Firebase"""
+    def get_department_stats(self, db) -> Dict:
         try:
             employees = db.collection('employees').stream()
             stats = {}
@@ -210,8 +196,7 @@ class Arrangement:
             'last_updated': datetime.now()
         }
 
-    def save_to_firebase(self) -> bool:
-        """Save arrangement to Firebase"""
+    def save_to_firebase(self, db) -> bool:
         try:
             db.collection('arrangements').document(self.arrangement_id).set(self.to_dict())
             return True
@@ -219,8 +204,7 @@ class Arrangement:
             print(f"Error saving arrangement to Firebase: {str(e)}")
             return False
 
-    def update_status(self, new_status: str, updated_by: str) -> bool:
-        """Update arrangement status in Firebase"""
+    def update_status(self, db, new_status: str, updated_by: str) -> bool:
         try:
             self.status = new_status
             db.collection('arrangements').document(self.arrangement_id).update({
@@ -234,7 +218,7 @@ class Arrangement:
             return False
 
 class TimetableService:
-    def __init__(self):
+    def __init__(self, db: firestore.Client):
         self.db = db
         self.collection = 'arrangements'
 
@@ -243,10 +227,9 @@ class TimetableService:
         department_id: str, 
         status_filter: Optional[str] = None
     ) -> List[Arrangement]:
-        """Get department arrangements from Firebase"""
         try:
             query = self.db.collection(self.collection)\
-                          .where('department', '==', department_id)
+                          .where('department_id', '==', department_id)
             
             if status_filter:
                 query = query.where('status', '==', status_filter)
@@ -263,7 +246,6 @@ class TimetableService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
     ) -> List[Arrangement]:
-        """Get employee arrangements from Firebase with optional date range"""
         try:
             query = self.db.collection(self.collection)\
                           .where('employee_id', '==', employee_id)
