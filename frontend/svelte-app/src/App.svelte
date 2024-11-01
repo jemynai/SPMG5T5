@@ -5,7 +5,9 @@
     import HRViewTimetable from './HRViewTimetable.svelte';
     import ManagerTimetable from './ManagerTimetable.svelte';
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
+    import CancelRequest from './CancelRequest.svelte';
     import { writable } from 'svelte/store'; // To manage route state
+
 
     let showModal = false;
     const openModal = () => { showModal = true; };
@@ -15,7 +17,8 @@
         '/arrangements': Arrangements,
         '/withdrawal-request': WithdrawalRequest,
         '/hr-view-timetable': HRViewTimetable,
-        '/view-own-schedule': ViewOwnSchedule // Added route for the ViewOwnSchedule component
+        '/view-own-schedule': ViewOwnSchedule,// Added route for the ViewOwnSchedule component
+        '/cancel-request': CancelRequest 
     };
 
     // Writable store for current route
@@ -42,6 +45,7 @@
         <button on:click={() => navigateTo('/arrangements')}>Arrangements</button>
         <button on:click={() => navigateTo('/withdrawal-request')}>Withdrawal Request</button>
         <button on:click={() => navigateTo('/hr-view-timetable')}>HR Timetable</button>
+        <button on:click={() => navigateTo('/cancel-request')}>Cancel Request</button>
     </nav>
 
     <!-- Render the current component based on route -->
@@ -60,6 +64,11 @@
     {#if $currentRoute === '/hr-view-timetable'}
         <HRViewTimetable />
     {/if}
+
+    {#if $currentRoute === '/cancel-request'}
+        <CancelRequest /> <!-- Conditional rendering for CancelRequest component -->
+    {/if}
+    
 </main>
 
 <style>

@@ -1,139 +1,201 @@
-<script>
-    import { onMount } from 'svelte';
+import React, { useState, useEffect } from 'react';
+import { Calendar } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
+import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 
-    let department_id = ''; // Bound to user input
-    let status_filter = ''; // Bound to user input (optional)
-    let arrangements = []; // Store fetched timetable data
-    let errorMessage = ''; // Display error messages
+const TeamTimetable = () => {
+  const [departmentId, setDepartmentId] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [arrangements, setArrangements] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    // Function to fetch timetable based on department and optional status
-    async function fetchTimetable() {
-        errorMessage = ''; // Clear previous errors
-        arrangements = []; // Reset timetable data
-
-        if (!department_id) {
-            errorMessage = "Department ID is required";
-            return;
-        }
-
-        let url = `http://localhost:8000/mngr_view_ttbl?department_id=${department_id}`;
-        if (status_filter) {
-            url += `&status=${status_filter}`;
-        }
-
-        try {
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.arrangements) {
-                arrangements = data.arrangements;
-            } else {
-                errorMessage = data.message || 'No arrangements found for this department';
-            }
-        } catch (error) {
-            errorMessage = error.message;
-        }
+  
+  const API_BASE_URL = 'http://localhost:8080'; 
+  const fetchTimetableData = async () => {
+    if (!departmentId) {
+      setError('Please enter a department ID');
+      return;
     }
 
-    // Format the date in a human-readable way
-    function formatDate(date) {
-        const dateObj = new Date(Date.parse(date));
-        return dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
+    setLoading(true);
+    setError('');
+
+    try {
+      let url = `${API_BASE_URL}/mngr_view_ttbl?department_id=${encodeURIComponent(departmentId)}`;
+      if (statusFilter) {
+        url += `&status=${encodeURIComponent(statusFilter)}`;
+      }
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Failed to fetch timetable data');
+      }
+
+      setArrangements(data.arrangements);
+    } catch (err) {
+      setError(err.message || 'Error fetching timetable data');
+      setArrangements([]);
+    } finally {
+      setLoading(false);
     }
-</script>
+  };
 
-<main>
-    <h1>Manager Timetable View</h1>
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
 
-    <!-- Department ID Input -->
-    <div>
-        <label for="department_id">Department ID:</label>
-        <input
-            type="text"
-            id="department_id"
-            bind:value={department_id}
-            placeholder="Enter Department ID"
-        />
+  // Calculate location distribution for pie chart
+  const getLocationDistribution = () => {
+    if (!arrangements.length) return [];
+    
+    const distribution = arrangements.reduce((acc, curr) => {
+      acc[curr.status] = (acc[curr.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.entries(distribution).map(([name, value]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      value,
+      percentage: ((value / arrangements.length) * 100).toFixed(1)
+    }));
+  };
+
+  const COLORS = ['#3b82f6', '#22c55e']; // Blue for office, Green for home
+
+  return (
+    <div className="max-w-4xl mx-auto p-4 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-6 w-6" />
+              Team Timetable Dashboard
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <Input
+                placeholder="Enter Department ID"
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                className="w-full"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full rounded-md border border-gray-200 px-3 py-2"
+              >
+                <option value="">All Locations</option>
+                <option value="office">Office</option>
+                <option value="home">Home</option>
+              </select>
+              <Button 
+                onClick={fetchTimetableData} 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'View Timetable'
+                )}
+              </Button>
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              {arrangements.map((arrangement, index) => (
+                <div
+                  key={arrangement.id || index}
+                  className={`p-4 rounded-lg border ${
+                    arrangement.status === 'office' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="font-medium">{arrangement.employee_id}</h3>
+                      <p className="text-sm text-gray-600">ID: {arrangement.id}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        arrangement.status === 'office' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {arrangement.status.toUpperCase()}
+                      </span>
+                      <p className="text-sm text-gray-600 mt-1">{formatDate(arrangement.date)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Location Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {arrangements.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={getLocationDistribution()}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percentage }) => `${name}: ${percentage}%`}
+                    >
+                      {getLocationDistribution().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-gray-500">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
+  );
+};
 
-    <!-- Status Filter (optional) -->
-    <div>
-        <label for="status_filter">Filter by Status (optional):</label>
-        <select id="status_filter" bind:value={status_filter}>
-            <option value="">All</option>
-            <option value="office">Office</option>
-            <option value="home">Home</option>
-        </select>
-    </div>
-
-    <!-- Fetch Timetable Button -->
-    <button on:click={fetchTimetable}>Fetch Timetable</button>
-
-    <!-- Error Message -->
-    {#if errorMessage}
-        <p style="color:red">{errorMessage}</p>
-    {/if}
-
-    <!-- Display fetched timetable data -->
-    <ul>
-        {#each arrangements as arrangement}
-            <li>
-                <b>{arrangement.employee_id}</b>: 
-                {arrangement.shift.toUpperCase()} WFH on 
-                {formatDate(arrangement.date)} 
-                (Status: {arrangement.status})
-            </li>
-        {/each}
-    </ul>
-</main>
-
-<style>
-    main {
-        text-align: center;
-        padding: 1em;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    div {
-        margin-bottom: 1em;
-    }
-
-    input, select {
-        padding: 0.5em;
-        margin-left: 1em;
-        font-size: 1em;
-    }
-
-    button {
-        padding: 10px 20px;
-        font-size: 1em;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-    }
-
-    button:hover {
-        background-color: #45a049;
-    }
-
-    ul {
-        text-align: left;
-        padding: 0;
-    }
-
-    li {
-        list-style: none;
-        background-color: #f9f9f9;
-        margin: 0.5em 0;
-        padding: 0.5em;
-        border: 1px solid #ddd;
-    }
-</style>
+export default TeamTimetable;

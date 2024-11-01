@@ -7,6 +7,7 @@ from hr_view_ttbl import hr_view_bp
 from employee_view_own_ttbl import employee_view_own_bp
 from controllers.auth_controller import AuthController
 from controllers.employee_controller import EmployeeController
+from employee_view_team_ttbl import employee_view_team_bp
 from apply import apply_bp 
 from flask_cors import CORS
 from CancelRequest import pending_request_bp
@@ -24,6 +25,7 @@ app.register_blueprint(apply_bp)
 app.register_blueprint(mngr_view_bp)
 app.register_blueprint(hr_view_bp)
 app.register_blueprint(employee_view_own_bp)
+app.register_blueprint(employee_view_team_bp)
 app.register_blueprint(pending_request_bp)
 app.register_blueprint(AuthController().bp)
 app.register_blueprint(EmployeeController().bp)
@@ -31,4 +33,3 @@ app.register_blueprint(EmployeeController().bp)
 # if mac has issue running, change to port 8000
 if __name__ == '__main__':
     app.run(debug=True)
-

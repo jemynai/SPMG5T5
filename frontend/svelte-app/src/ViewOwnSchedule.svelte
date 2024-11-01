@@ -3,7 +3,8 @@
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
 	// event-calendar code
-	let current_user = '130002'
+	let current_user = '130002';
+	let current_view = 'self';
 	let plugins = [DayGrid];
     let options = {
         events: [],
@@ -15,37 +16,79 @@
 			document.getElementById('eventModal').style.display = 'block';
     	},
 	};
+
+	function updateView(view) {
+		current_view = view;
+		console.log(current_view)
+		fetchArrangements()
+	}
+
 	function closeModal() {
 		document.getElementById('eventModal').style = 'display:none;'
 	}
+
 	let arrangementsArray = [];
 
 	async function fetchArrangements() {
-    	try {
-      		const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`);
-      		if (!response.ok) {
-        		throw new Error('Failed to fetch data');
-      		}
-      	const data = await response.json();
+		if (current_view == 'self') {
+			try {
+				const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`);
+				if (!response.ok) {
+					throw new Error('Failed to fetch data');
+				}
+			const data = await response.json();
 
-		// Reset arrays before pushing new data
-		arrangementsArray = [];
-		options.events = [];
+			// Reset arrays before pushing new data
+			arrangementsArray = [];
+			options.events = [];
 
-		arrangementsArray.push(...data.arrangements);
-		for (let a of arrangementsArray) {
-			let arrangementDate = new Date(Date.parse(a.date));
-			options.events.push({
-				title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
-				start: arrangementDate,
-				end: arrangementDate,
-				allDay: true
-			});
+			arrangementsArray.push(...data.arrangements);
+			for (let a of arrangementsArray) {
+				let arrangementDate = new Date(Date.parse(a.date));
+				options.events.push({
+					title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
+					start: arrangementDate,
+					end: arrangementDate,
+					allDay: true
+				});
+			}
+				arrangementsArray = [...arrangementsArray];
+				options.events = [...options.events];
+			} catch (error) {
+				console.error('Error fetching data:', error);
+			}
 		}
-			arrangementsArray = [...arrangementsArray];
-			options.events = [...options.events];
-		} catch (error) {
-			console.error('Error fetching data:', error);
+		else {
+			try {
+				const response = await fetch(`http://localhost:8000/employee_view_team_ttbl?eid=${current_user}`);
+				if (!response.ok) {
+					throw new Error('Failed to fetch data');
+				}
+			const data = await response.json();
+
+			// Reset arrays before pushing new data
+			arrangementsArray = [];
+			options.events = [];
+
+			arrangementsArray.push(...data.arrangements);
+			for (let a of arrangementsArray) {
+				let arrangementDate = new Date(Date.parse(a.date));
+				options.events.push({
+					title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
+					start: arrangementDate,
+					end: arrangementDate,
+					allDay: true
+				});
+			}
+				arrangementsArray = [...arrangementsArray];
+				options.events = [...options.events];
+			} catch (error) {
+				console.error('Error fetching data:', error);
+			}
+
+			arrangementsArray = [];
+			options.events = [];
+			console.log('hi')
 		}
 	}
 
@@ -79,6 +122,10 @@
 			<option value="130010">130010</option>
 		</select>
 	</div>
+	<div class="current-view-container">
+		<div class="current-view-box {current_view === 'self' ? 'active' : ''}" on:click={() => updateView('self')}>Self</div>
+		<div class="current-view-box {current_view === 'team' ? 'active' : ''}" on:click={() => updateView('team')}>Team</div>
+	  </div>
 	<Calendar {plugins} {options} />
 	<ul>
 		{#each arrangementsArray as arrangement}
@@ -158,5 +205,30 @@
 		color: black;
 		text-decoration: none;
 		cursor: pointer;
+	}
+
+	/* Box styles for current view selection */
+	.current-view-container {
+		display: flex;
+		justify-content: flex-start; /* Distribute space between boxes */
+		margin: 20px 0;
+		max-width: 200px; /* Set a max width for the container */
+	}
+
+	.current-view-box {
+		flex: 1;
+		padding: 10px;
+		border: 1px solid #ccc;
+		cursor: pointer;
+		text-align: center;
+		transition: background-color 0.3s;
+	}
+
+	.current-view-box:hover {
+		background-color: #f0f0f0;
+	}
+
+	.active {
+		background-color: #f0f0f0;
 	}
 </style>
