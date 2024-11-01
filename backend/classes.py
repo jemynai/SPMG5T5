@@ -20,17 +20,13 @@ class JobDetails:
     manager: str
 
 class Employee:
-    def __init__(self, user_id: str, name: Name, contact_info: ContactInfo, 
-                 job_details: JobDetails, role: str, managers: List[str], 
-                 department: str = None, status: str = 'office'):
+    def __init__(self, user_id: str, name: Name, contact_info: ContactInfo, job_details: JobDetails, role: str, password: str = None):
         self.user_id = user_id
         self.name = name
         self.contact_info = contact_info
         self.job_details = job_details
         self.role = role
-        self.managers = managers
-        self.department = department
-        self.status = status
+        self.password = password
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'Employee':
@@ -55,7 +51,8 @@ class Employee:
             role=data.get('role'),
             managers=data.get('managers', []),
             department=data.get('department'),
-            status=data.get('status', 'office')
+            status=data.get('status', 'office'),
+            password=data.get('password')
         )
 
     def to_dict(self) -> Dict:
@@ -75,10 +72,7 @@ class Employee:
                 'manager': self.job_details.manager
             },
             'role': self.role,
-            'managers': self.managers,
-            'department': self.department,
-            'status': self.status,
-            'lastUpdated': datetime.now()
+            'password': self.password,
         }
 
     def save_to_firebase(self, db: firestore.Client) -> bool:

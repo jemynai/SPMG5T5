@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify, request
 from firebase_admin import firestore
 from datetime import datetime
-from firebase import get_db  # Assuming you have a firebase.py file for your Firebase connection
+from services.firebase import Firebase
 
 # Create a Blueprint for this module
 s_delete_bp = Blueprint('s_delete_bp', __name__)
 
-db = get_db()  # Retrieve the Firestore client
+db = Firebase().get_db()  # Retrieve the Firestore client
 
 # Endpoint to retrieve all WFH requests
 @s_delete_bp.route('/wfh_requests', methods=['GET'])

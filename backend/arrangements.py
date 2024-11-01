@@ -4,7 +4,7 @@ from datetime import datetime
 
 class ArrangementService:
     def __init__(self):
-        self.db = get_db()
+        self.db = Firebase().get_db()
 
     def create_arrangement(self, arrangement_data):
         if not arrangement_data:

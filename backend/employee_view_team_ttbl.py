@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 
 # Define a blueprint for employee view timetable
 employee_view_team_bp = Blueprint('employee_view_team', __name__)
 
 @employee_view_team_bp.route('/employee_view_team_ttbl', methods=['GET'])
 def get_employee_arrangements():
-    db = get_db()
+    db = Firebase().get_db()
     # Get employee_id from query params
     employee_id = request.args.get("eid")
     if not employee_id:
