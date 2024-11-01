@@ -1,40 +1,129 @@
 <script>
-    import ApplyModal from './Apply.svelte';
-    import Arrangements from './Arrangements.svelte';
-    import WithdrawalRequest from './WithdrawalRequest.svelte';
+    import { onDestroy } from "svelte";
+    import Router from "svelte-spa-router"; // Correct Router import
+    import scheduleStore from "./schedule-store.js";
+    import Calendar from "./Calendar.svelte";
+    import Scheduler from "./Scheduler.svelte";
+    import ApplyModal from "./Apply.svelte";
+    import Arrangements from "./Arrangements.svelte";
+    import WithdrawalRequest from "./WithdrawalRequest.svelte";
     import HRViewTimetable from './HRViewTimetable.svelte';
     import ManagerTimetable from './ManagerTimetable.svelte';
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
     import CancelRequest from './CancelRequest.svelte';
-    import { writable } from 'svelte/store'; // To manage route state
-
 
     let showModal = false;
-    const openModal = () => { showModal = true; };
-    const closeModal = () => { showModal = false; };
+    let schedule = {};
+    let schedulerShowing = false;
+    let dateID = "";
+    let dateHeading = "";
+    let appointments = [];
 
-    const routes = {
-        '/arrangements': Arrangements,
-        '/withdrawal-request': WithdrawalRequest,
-        '/hr-view-timetable': HRViewTimetable,
-        '/view-own-schedule': ViewOwnSchedule,// Added route for the ViewOwnSchedule component
-        '/cancel-request': CancelRequest 
+    const openModal = () => {
+        showModal = true;
     };
 
-    // Writable store for current route
-    let currentRoute = writable('/'); // Default to home or any route you want
+    const closeModal = () => {
+        showModal = false;
+    };
 
-    // Function to navigate to different routes
-    const navigateTo = (route) => {
-        currentRoute.set(route);
+    const unsubscribe = scheduleStore.subscribe((currState) => {
+        schedule = currState;
+    });
+
+    onDestroy(() => {
+        if (unsubscribe) unsubscribe();
+    });
+
+    const handleScheduler = (e) => {
+        schedulerShowing = true;
+        dateID = e.target.dataset.dateid;
+        makeDateHeading();
+    };
+
+    const makeDateHeading = () => {
+        let dateAsHeading = dateID.replace(/_/g, " ");
+        let date = new Date(`${dateAsHeading}`);
+        return (dateHeading = date.toLocaleString("en-US", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+        }));
+    };
+
+    const removeEmptyDate = () => {
+        if (schedule[dateID] && schedule[dateID].length === 0) {
+            scheduleStore.update((currDataState) => {
+                delete currDataState[dateID];
+                return currDataState;
+            });
+        }
+    };
+
+    const closeScheduler = () => {
+        schedulerShowing = false;
+        removeEmptyDate();
+    };
+
+    const setApptToSch = (e) => {
+        let time = `${e.detail.hour}:${e.detail.minutes < 10 ? "0" + e.detail.minutes : e.detail.minutes}${e.detail.amOrPM}`;
+        let newAppt = {
+            id: Math.floor(Math.random() * 1000000),
+            eventname: e.detail.eventName,
+            time: time === ":0" ? "no time set" : time,
+            completed: false,
+        };
+
+        if (!schedule[dateID]) {
+            scheduleStore.update((currState) => {
+                currState[dateID] = [newAppt];
+                return currState;
+            });
+        } else {
+            scheduleStore.update((currState) => {
+                let currDayAppts = currState[dateID];
+                currState[dateID] = [...currDayAppts, newAppt];
+                return currState;
+            });
+        }
+    };
+
+    // Define routes for different pages
+    const routes = {
+        "/calendar": Calendar,
+        "/arrangements": Arrangements,
+        "/withdrawal-request": WithdrawalRequest,
+        "/apply": ApplyModal,
+
     };
 </script>
 
 <main>
-    <!-- Button to open the modal -->
+
+    <nav>
+        <a href="/calendar">Calendar</a> <!-- Changed from "/" to "/calendar" -->
+        <a href="/arrangements">Arrangements</a>
+        <a href="/withdrawal-request">Withdrawals</a>
+        <a href="/apply">Apply</a>
+    </nav>
+    
+
+    <!-- Router to handle page navigation -->
+    <Router {routes} />
+
+    {#if schedulerShowing}
+        <Scheduler
+            on:modalClose={closeScheduler}
+            on:addAppt={setApptToSch}
+            {dateID}
+            {dateHeading}
+            {appointments}
+        />
+    {/if}
+
     <button class="apply-button" on:click={openModal}>Apply</button>
 
-    <!-- Modal for applying (conditionally rendered) -->
+
     {#if showModal}
         <ApplyModal on:close={closeModal} />
     {/if}
@@ -79,7 +168,7 @@
     .apply-button {
         padding: 10px 20px;
         font-size: 18px;
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
         border: none;
         border-radius: 5px;
@@ -91,12 +180,19 @@
     }
 
     nav {
-        margin-top: 20px;
+
+        margin-bottom: 20px;
     }
 
-    nav button {
-        margin: 5px;
-        padding: 10px;
+    nav a {
+        margin-right: 10px;
+        color: #007bff;
+        text-decoration: none;
         font-size: 16px;
     }
+
+    nav a:hover {
+        text-decoration: underline;
+    }
+
 </style>
