@@ -48,11 +48,12 @@
 					title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
 					start: arrangementDate,
 					end: arrangementDate,
-					allDay: true
+					allDay: true,
 				});
 			}
 				arrangementsArray = [...arrangementsArray];
 				options.events = [...options.events];
+				arrangementsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
 			} catch (error) {
 				console.error('Error fetching data:', error);
 			}
@@ -81,6 +82,7 @@
 			}
 				arrangementsArray = [...arrangementsArray];
 				options.events = [...options.events];
+				arrangementsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
 			} catch (error) {
 				console.error('Error fetching data:', error);
 			}
@@ -110,13 +112,6 @@
 
 <main>
 	<h1>My Work From Home Arrangements</h1>
-	<div>
-		<p>Current user:</p>
-		<select id="current_user" on:change="{(event) => {current_user = event.target.value; fetchArrangements();}}">
-			<option value="130002">130002</option>
-			<option value="140008">140008</option>
-		</select>
-	</div>
 	<div class="current-view-container">
 		<div class="current-view-box {current_view === 'self' ? 'active' : ''}" on:click={() => updateView('self')}>Self</div>
 		<div class="current-view-box {current_view === 'team' ? 'active' : ''}" on:click={() => updateView('team')}>Team</div>
