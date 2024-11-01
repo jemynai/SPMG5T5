@@ -1,7 +1,7 @@
 import unittest
 from flask import Flask
 from arrangements import arrangement_bp
-from firebase import get_db
+from services.firebase import Firebase
 
 class TestArrangements(unittest.TestCase):
     @classmethod
@@ -9,7 +9,7 @@ class TestArrangements(unittest.TestCase):
         cls.app = Flask(__name__)
         cls.app.register_blueprint(arrangement_bp)
         cls.client = cls.app.test_client()
-        cls.db = get_db()
+        cls.db = Firebase().get_db()
 
     def test_create_arrangement(self):
         response = self.client.post('/create_arrangement', json={
