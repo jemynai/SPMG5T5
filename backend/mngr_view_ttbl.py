@@ -5,18 +5,17 @@ from flask_cors import CORS
 from typing import Dict, Tuple
 from datetime import datetime, timezone
 
-# Create blueprint
 mngr_view_bp = Blueprint('mngr_view', __name__)
 
-# Define allowed origins
 ALLOWED_ORIGINS = [
     "http://localhost:8080",
-    "http://localhost:3000",  # React default port
+    "http://localhost:3000",
+    "http://localhost:5173",
     "http://127.0.0.1:8080",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173"
 ]
 
-# Enable CORS with more specific configuration
 CORS(mngr_view_bp, resources={
     r"/mngr_view_ttbl": {
         "origins": ALLOWED_ORIGINS,
@@ -26,12 +25,10 @@ CORS(mngr_view_bp, resources={
     }
 })
 
-# Initialize services
 db = get_db()
 timetable_service = TimetableService(db)
 
 def format_date(date_obj: datetime) -> str:
-    """Format datetime object to ISO string with UTC timezone."""
     if isinstance(date_obj, datetime):
         if date_obj.tzinfo is None:
             date_obj = date_obj.replace(tzinfo=timezone.utc)
@@ -39,7 +36,6 @@ def format_date(date_obj: datetime) -> str:
     return str(date_obj)
 
 def normalize_status(status: str) -> str:
-    """Normalize status values to match frontend expectations."""
     if not status:
         return ""
     
@@ -48,27 +44,29 @@ def normalize_status(status: str) -> str:
         'HOME': 'home',
         'WFO': 'office',
         'WFH': 'home',
+        'REMOTE': 'home',
         'WORK_FROM_OFFICE': 'office',
         'WORK_FROM_HOME': 'home'
     }
     return status_map.get(status.upper(), status.lower())
 
 def create_response(data: Dict = None, error: str = None, status_code: int = 200) -> Tuple:
-    """Create a standardized API response."""
     response = {
         "success": error is None,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
     if error:
         response["error"] = error
-    else:
-        response["data"] = data
+    elif data:
+        if "arrangements" in data:
+            response.update(data)
+        else:
+            response["data"] = data
         
     return jsonify(response), status_code
 
 def format_arrangement(arr: Arrangement) -> Dict:
-    """Format arrangement data for frontend consumption."""
     try:
         arr_dict = arr.to_dict()
         return {
@@ -77,6 +75,7 @@ def format_arrangement(arr: Arrangement) -> Dict:
             "department_id": str(arr_dict.get('department_id', '')),
             "status": normalize_status(arr_dict.get('status', '')),
             "date": format_date(arr_dict.get('date')),
+            "details": arr_dict.get('details', {}),
             "created_at": format_date(arr_dict.get('created_at')),
             "updated_at": format_date(arr_dict.get('updated_at'))
         }
@@ -85,37 +84,29 @@ def format_arrangement(arr: Arrangement) -> Dict:
 
 @mngr_view_bp.route('/mngr_view_ttbl', methods=['GET'])
 def mngr_view_ttbl():
-    """Handle GET requests for department timetable view."""
     try:
-        # Get and validate query parameters
         department_id = request.args.get('department_id', '').strip()
         status_filter = request.args.get('status', '').strip()
         
-        # Validate department_id
         if not department_id:
             return create_response(error="Department ID is required", status_code=400)
 
-        # Normalize status filter if provided
         if status_filter:
             status_filter = normalize_status(status_filter)
 
-        # Fetch arrangements using service
         arrangements = timetable_service.get_department_arrangements(
             department_id=department_id,
             status_filter=status_filter
         )
 
-        # Format arrangements for frontend
         arrangements_data = [format_arrangement(arr) for arr in arrangements]
         
-        # Calculate summary statistics
         total_count = len(arrangements_data)
         status_counts = {
             'office': sum(1 for arr in arrangements_data if arr['status'] == 'office'),
             'home': sum(1 for arr in arrangements_data if arr['status'] == 'home')
         }
 
-        # Prepare response data
         response_data = {
             "arrangements": arrangements_data,
             "summary": {
@@ -145,7 +136,6 @@ def mngr_view_ttbl():
     except Exception as e:
         return create_response(error=f"An unexpected error occurred: {str(e)}", status_code=500)
 
-# Error handlers
 @mngr_view_bp.errorhandler(404)
 def not_found_error(error):
     return create_response(error="Resource not found", status_code=404)
@@ -156,7 +146,6 @@ def internal_error(error):
 
 @mngr_view_bp.after_request
 def after_request(response):
-    """Add CORS headers to all responses."""
     origin = request.headers.get('Origin')
     if origin in ALLOWED_ORIGINS:
         response.headers.add('Access-Control-Allow-Origin', origin)
