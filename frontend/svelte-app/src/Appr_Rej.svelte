@@ -47,7 +47,7 @@
   
   async function deleteRequest() {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/arrangements/reject?eid=${selectedRow.employee_id}&date=${selectedRow.date}`, {
+        const response = await fetch(`http://127.0.0.1:5000/arrangements/reject?aID=${selectedRow.arrangementId}`, {
             method: 'POST'
         });
 
@@ -67,7 +67,7 @@
   async function approveRequest() {
 
     try {
-        const response = await fetch(`http://127.0.0.1:5000/arrangements/approve?eid=${selectedRow.employee_id}&date=${selectedRow.date}`, {
+        const response = await fetch(`http://127.0.0.1:5000/arrangements/approve?aID=${selectedRow.arrangementId}`, {
             method: 'POST'
         });
 
@@ -94,6 +94,7 @@
   <table>
       <thead>
           <tr>
+              <th>Arrangement ID</th>
               <th>Date Created</th>
               <th>Date of Shift</th>
               <th>Employee ID</th>
@@ -107,6 +108,7 @@
       <tbody>
           {#each tableData as person}
               <tr>
+                  <td>{person.arrangementId}</td>
                   <td>{person.created_at}</td>
                   <td>{person.date}</td>
                   <td>{person.employee_id}</td>
