@@ -2,40 +2,61 @@
 	import { onMount } from 'svelte'; 
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
-	// event-calendar code
+	
 	let current_user = '130002';
 	let current_view = 'self';
 	let plugins = [DayGrid];
     let options = {
         events: [],
 		eventClick: function(info) {
-			// Populate modal with event details
-			document.getElementById('modalEventTitle').innerText = formatDate(info.event.start)
-			document.getElementById('modalEventDetails').innerText = info.event.title.slice(-6) + " for employee no. " + info.event.title.slice(0,6)
-			// Display the modal
-			document.getElementById('eventModal').style.display = 'block';
+			showEventDetails(info);
     	},
 	};
 
-	function updateView(view) {
-		current_view = view;
-		console.log(current_view)
-		fetchArrangements()
+	function showEventDetails(info) {
+		// Populate modal with event details
+		document.getElementById('modalEventTitle').innerText = formatDate(info.event.start);
+		document.getElementById('modalEventDetails').innerText = info.event.title.slice(-6) + " for employee no. " + info.event.title.slice(0,6);
+		// Display the modal
+		const modal = document.getElementById('eventModal');
+		modal.style.display = 'block';
+		// Focus the close button for keyboard navigation
+		document.querySelector('.close-button').focus();
 	}
 
-	function closeModal() {
-		document.getElementById('eventModal').style = 'display:none;'
+	function updateView(view) {
+		current_view = view;
+		console.log(current_view);
+		fetchArrangements();
+	}
+
+	function handleViewKeyDown(event, view) {
+		// Handle Enter or Space key
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			updateView(view);
+		}
+	}
+
+	function closeModal(event) {
+		// Close on click, Enter, Space, or Escape
+		if (!event.key || event.key === 'Enter' || event.key === ' ' || event.key === 'Escape') {
+			document.getElementById('eventModal').style.display = 'none';
+		}
 	}
 
 	let arrangementsArray = [];
 
 	async function fetchArrangements() {
-		if (current_view == 'self') {
-			try {
-				const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`);
-				if (!response.ok) {
-					throw new Error('Failed to fetch data');
-				}
+		const endpoint = current_view === 'self' 
+			? `http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`
+			: `http://localhost:8000/employee_view_team_ttbl?eid=${current_user}`;
+
+		try {
+			const response = await fetch(endpoint);
+			if (!response.ok) {
+				throw new Error('Failed to fetch data');
+			}
 			const data = await response.json();
 
 			// Reset arrays before pushing new data
@@ -52,63 +73,28 @@
 					allDay: true
 				});
 			}
-				arrangementsArray = [...arrangementsArray];
-				options.events = [...options.events];
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			}
-		}
-		else {
-			try {
-				const response = await fetch(`http://localhost:8000/employee_view_team_ttbl?eid=${current_user}`);
-				if (!response.ok) {
-					throw new Error('Failed to fetch data');
-				}
-			const data = await response.json();
-
-			// Reset arrays before pushing new data
-			arrangementsArray = [];
-			options.events = [];
-
-			arrangementsArray.push(...data.arrangements);
-			for (let a of arrangementsArray) {
-				let arrangementDate = new Date(Date.parse(a.date));
-				options.events.push({
-					title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
-					start: arrangementDate,
-					end: arrangementDate,
-					allDay: true
-				});
-			}
-				arrangementsArray = [...arrangementsArray];
-				options.events = [...options.events];
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			}
-
-			arrangementsArray = [];
-			options.events = [];
-			console.log('hi')
+			arrangementsArray = [...arrangementsArray];
+			options.events = [...options.events];
+		} catch (error) {
+			console.error('Error fetching data:', error);
 		}
 	}
 
 	onMount(() => {
     	fetchArrangements();
+		// Add event listener for Escape key
+		window.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') {
+				closeModal(e);
+			}
+		});
   	});
 
 	function formatDate(date) {
-		let dateObj = new Date(Date.parse(date))
-		let day = dateObj.getDate(); // Gets the day of the month (1-31)
-		let month = dateObj.getMonth() + 1; // Gets the month (0-11) and add 1 to make it (1-12)
-		let year = dateObj.getFullYear(); // Gets the full year (e.g., 2024)
-		// Format day and month to ensure two digits (e.g., "05" instead of "5")
-		if (day < 10) {
-			day = '0' + day;
-		}
-		if (month < 10) {
-			month = '0' + month;
-		}
-		// Return formatted date string
+		let dateObj = new Date(Date.parse(date));
+		let day = dateObj.getDate().toString().padStart(2, '0');
+		let month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+		let year = dateObj.getFullYear();
 		return `${day}/${month}/${year}`;
 	}
 </script>
@@ -116,18 +102,41 @@
 <main>
 	<h1>Work From Home Arrangements</h1>
 	<div>
-		<p>Current user:</p>
-		<select id="current_user" on:change="{(event) => {current_user = event.target.value; fetchArrangements();}}">
+		<label for="current_user">Current user:</label>
+		<select 
+			id="current_user" 
+			on:change="{(event) => {
+				current_user = event.target.value; 
+				fetchArrangements();
+			}}"
+			aria-label="Select current user"
+		>
 			<option value="130002">130002</option>
 			<option value="130010">130010</option>
 		</select>
 	</div>
-	<div class="current-view-container">
-		<div class="current-view-box {current_view === 'self' ? 'active' : ''}" on:click={() => updateView('self')}>Self</div>
-		<div class="current-view-box {current_view === 'team' ? 'active' : ''}" on:click={() => updateView('team')}>Team</div>
-	  </div>
+	<div class="current-view-container" role="tablist">
+		<button
+			class="current-view-box {current_view === 'self' ? 'active' : ''}"
+			role="tab"
+			aria-selected="{current_view === 'self'}"
+			on:click={() => updateView('self')}
+			on:keydown={(e) => handleViewKeyDown(e, 'self')}
+		>
+			Self
+		</button>
+		<button
+			class="current-view-box {current_view === 'team' ? 'active' : ''}"
+			role="tab"
+			aria-selected="{current_view === 'team'}"
+			on:click={() => updateView('team')}
+			on:keydown={(e) => handleViewKeyDown(e, 'team')}
+		>
+			Team
+		</button>
+	</div>
 	<Calendar {plugins} {options} />
-	<ul>
+	<ul aria-label="Work from home arrangements list">
 		{#each arrangementsArray as arrangement}
 			<li>
 				<b>{formatDate(arrangement.date)}</b><br>
@@ -135,9 +144,22 @@
 			</li>
 		{/each}
 	</ul>
-	<div id="eventModal" class="modal" style="display:none;">
+	<div 
+		id="eventModal" 
+		class="modal" 
+		style="display:none;" 
+		role="dialog" 
+		aria-labelledby="modalEventTitle"
+	>
 		<div class="modal-content">
-			<span class="close-button" on:click="{closeModal}">&times;</span>
+			<button 
+				class="close-button" 
+				on:click={closeModal}
+				on:keydown={closeModal}
+				aria-label="Close modal"
+			>
+				&times;
+			</button>
 			<h2><span id="modalEventTitle"></span></h2>
 			<p id="modalEventDetails"></p>
 		</div>
@@ -173,46 +195,50 @@
 	}
 
 	.modal {
-		display: none; /* Hidden by default */
-		position: fixed; /* Stay in place */
-		z-index: 1; /* Sit on top */
+		display: none;
+		position: fixed;
+		z-index: 1;
 		left: 0;
 		top: 0;
-		width: 100%; /* Full width */
-		height: 100%; /* Full height */
-		overflow: auto; /* Enable scroll if needed */
-		background-color: rgb(0,0,0); /* Fallback color */
-		background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+		width: 100%;
+		height: 100%;
+		overflow: auto;
+		background-color: rgba(0,0,0,0.4);
 	}
 
 	.modal-content {
 		background-color: #fefefe;
-		margin: 15% auto; /* 15% from the top and centered */
+		margin: 15% auto;
 		padding: 20px;
 		border: 1px solid #888;
-		width: 80%; /* Could be more or less, depending on screen size */
+		width: 80%;
+		position: relative;
 	}
 
 	.close-button {
+		position: absolute;
+		right: 10px;
+		top: 5px;
 		color: #aaa;
-		float: right;
 		font-size: 28px;
 		font-weight: bold;
+		border: none;
+		background: none;
+		cursor: pointer;
+		padding: 0 8px;
 	}
 
 	.close-button:hover,
 	.close-button:focus {
 		color: black;
 		text-decoration: none;
-		cursor: pointer;
 	}
 
-	/* Box styles for current view selection */
 	.current-view-container {
 		display: flex;
-		justify-content: flex-start; /* Distribute space between boxes */
+		justify-content: flex-start;
 		margin: 20px 0;
-		max-width: 200px; /* Set a max width for the container */
+		max-width: 200px;
 	}
 
 	.current-view-box {
@@ -222,10 +248,13 @@
 		cursor: pointer;
 		text-align: center;
 		transition: background-color 0.3s;
+		background: none;
 	}
 
-	.current-view-box:hover {
+	.current-view-box:hover,
+	.current-view-box:focus {
 		background-color: #f0f0f0;
+		outline: 2px solid #ff3e00;
 	}
 
 	.active {

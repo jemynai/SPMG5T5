@@ -67,6 +67,13 @@
         }
     };
 
+    const handleKeyPress = (event, day) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleDay(day);
+        }
+    };
+
     const handleDayOptionChange = (e) => {
         selectedDayOption = e.target.value;
         showPartDayOptions = selectedDayOption === "part-day";
@@ -77,6 +84,18 @@
 
     const selectHalfDay = (period) => {
         selectedHalfDay = period;
+    };
+
+    const handleModalClick = (e) => {
+        if (e.target === e.currentTarget) {
+            dispatch("close");
+        }
+    };
+
+    const handleModalKeydown = (e) => {
+        if (e.key === 'Escape') {
+            dispatch("close");
+        }
     };
 
     const handleSubmit = async () => {
@@ -91,18 +110,15 @@
         };
 
         try {
-
             const response = await fetch("http://127.0.0.1:5000/create_arrangement", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-
                 },
                 body: JSON.stringify(applicationData),
             });
 
             if (response.ok) {
-                const data = await response.json();
                 alert("Application submitted successfully!");
                 dispatch("close");
             } else {
@@ -119,9 +135,25 @@
     };
 </script>
 
-<div class="modal-backdrop" on:click={() => dispatch("close")}>
-    <div class="modal-content" on:click|stopPropagation>
-        <button class="close-button" on:click={() => dispatch("close")}>&times;</button>
+<div 
+    class="modal-backdrop" 
+    on:click={handleModalClick}
+    on:keydown={handleModalKeydown}
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+>
+    <div 
+        class="modal-content" 
+        role="document"
+    >
+        <button 
+            class="close-button" 
+            on:click={() => dispatch("close")}
+            aria-label="Close modal"
+        >
+            &times;
+        </button>
 
         {#if reviewMode}
             <div class="review-box">
@@ -139,66 +171,124 @@
                 <button class="next-button" on:click={handleSubmit}>Submit</button>
             </div>
         {:else}
-            <!-- Step 1: Date Selection -->
             {#if step === 1}
-                <h2>Apply for WFH Arrangement</h2>
-                <label for="wfh-date">Select WFH Date:</label>
-                <input type="date" id="wfh-date" bind:value={selectedDate} on:change={validateDate} />
+                <h2 id="modal-title">Apply for WFH Arrangement</h2>
+                <div class="form-group">
+                    <label for="wfh-date">Select WFH Date:</label>
+                    <input 
+                        type="date" 
+                        id="wfh-date" 
+                        bind:value={selectedDate} 
+                        on:change={validateDate}
+                        min={new Date().toISOString().split('T')[0]} 
+                    />
+                </div>
             {:else if step === 2}
-                <!-- Step 2: Repeated Weekly or One-Time -->
                 <h3>Application Type</h3>
-                <label>
-                    <input type="radio" name="applicationType" value="one-time" checked={applicationType === "one-time"} on:change={handleApplicationTypeChange} /> One-time application
-                </label>
-                <br />
-                <label>
-                    <input type="radio" name="applicationType" value="weekly" checked={applicationType === "weekly"} on:change={handleApplicationTypeChange} /> Repeated weekly
-                </label>
-                {#if applicationType === "weekly"}
-                    <div>
-                        <h4>Select Days:</h4>
-                        {#each daysOfWeek as day}
-                            <div class="day-option {selectedDays.includes(day) ? 'selected' : ''}" on:click={() => toggleDay(day)}>{day}</div>
-                        {/each}
-                        <p>Selected Days: {selectedDays.join(", ")}</p>
-                    </div>
-                {/if}
+                <div class="form-group">
+                    <label>
+                        <input 
+                            type="radio" 
+                            name="applicationType" 
+                            value="one-time" 
+                            checked={applicationType === "one-time"} 
+                            on:change={handleApplicationTypeChange}
+                        /> 
+                        One-time application
+                    </label>
+                    <label>
+                        <input 
+                            type="radio" 
+                            name="applicationType" 
+                            value="weekly" 
+                            checked={applicationType === "weekly"} 
+                            on:change={handleApplicationTypeChange}
+                        /> 
+                        Repeated weekly
+                    </label>
+                    {#if applicationType === "weekly"}
+                        <div class="days-selection">
+                            <h4>Select Days (max 3):</h4>
+                            <div role="group" aria-label="Day selection" class="days-container">
+                                {#each daysOfWeek as day}
+                                    <button 
+                                        class="day-option {selectedDays.includes(day) ? 'selected' : ''}"
+                                        on:click={() => toggleDay(day)}
+                                        on:keypress={(e) => handleKeyPress(e, day)}
+                                        aria-pressed={selectedDays.includes(day)}
+                                    >
+                                        {day}
+                                    </button>
+                                {/each}
+                            </div>
+                            <p class="selected-days">Selected: {selectedDays.join(", ") || "None"}</p>
+                        </div>
+                    {/if}
+                </div>
             {:else if step === 3}
-                <!-- Step 3: Full Day or Part Day -->
                 <h3>Work Arrangement</h3>
-                <label>
-                    <input type="radio" name="dayOption" value="full-day" checked={selectedDayOption === "full-day"} on:change={handleDayOptionChange} /> Full Day
-                </label>
-                <br />
-                <label>
-                    <input type="radio" name="dayOption" value="part-day" checked={selectedDayOption === "part-day"} on:change={handleDayOptionChange} /> Part Day
-                </label>
-                {#if showPartDayOptions}
-                    <div class="part-day-options">
-                        <div>
-                            <button class="day-option {selectedHalfDay === 'AM' ? 'selected' : ''}" on:click={() => selectHalfDay("AM")}>AM</button>
+                <div class="form-group">
+                    <label>
+                        <input 
+                            type="radio" 
+                            name="dayOption" 
+                            value="full-day" 
+                            checked={selectedDayOption === "full-day"} 
+                            on:change={handleDayOptionChange}
+                        /> 
+                        Full Day
+                    </label>
+                    <label>
+                        <input 
+                            type="radio" 
+                            name="dayOption" 
+                            value="part-day" 
+                            checked={selectedDayOption === "part-day"} 
+                            on:change={handleDayOptionChange}
+                        /> 
+                        Part Day
+                    </label>
+                    {#if showPartDayOptions}
+                        <div role="group" aria-label="Part day selection" class="part-day-options">
+                            <button 
+                                class="day-option {selectedHalfDay === 'AM' ? 'selected' : ''}"
+                                on:click={() => selectHalfDay("AM")}
+                                aria-pressed={selectedHalfDay === 'AM'}
+                            >
+                                AM
+                            </button>
+                            <button 
+                                class="day-option {selectedHalfDay === 'PM' ? 'selected' : ''}"
+                                on:click={() => selectHalfDay("PM")}
+                                aria-pressed={selectedHalfDay === 'PM'}
+                            >
+                                PM
+                            </button>
                         </div>
-                        <div>
-                            <button class="day-option {selectedHalfDay === 'PM' ? 'selected' : ''}" on:click={() => selectHalfDay("PM")}>PM</button>
-                        </div>
-                    </div>
-                {/if}
+                    {/if}
+                </div>
             {:else if step === 4}
-                <!-- Step 4: Reason -->
                 <h3>Reason</h3>
-                <textarea bind:value={reason} placeholder="Please provide a reason for your WFH request"></textarea>
+                <div class="form-group">
+                    <textarea 
+                        bind:value={reason} 
+                        placeholder="Please provide a reason for your WFH request"
+                        aria-label="Reason for WFH request"
+                        rows="4"
+                    ></textarea>
+                </div>
             {/if}
             <div class="buttons">
                 {#if step > 1}
                     <button class="back-button" on:click={prevStep}>Back</button>
                 {/if}
-                <button class="next-button" on:click={nextStep}>Next</button>
+                <button class="next-button" on:click={nextStep}>
+                    {step === 4 ? 'Review' : 'Next'}
+                </button>
             </div>
         {/if}
     </div>
 </div>
-
-
 
 <style>
     .modal-backdrop {
@@ -217,26 +307,44 @@
     .modal-content {
         background-color: white;
         border-radius: 8px;
-        width: 400px;
-        padding: 20px;
+        width: 90%;
+        max-width: 500px;
+        padding: 24px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
     }
 
     .close-button {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 12px;
+        right: 12px;
         background-color: transparent;
         border: none;
-        font-size: 20px;
+        font-size: 24px;
         cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+
+    .close-button:hover {
+        background-color: #f0f0f0;
+    }
+
+    .form-group {
+        margin: 16px 0;
+    }
+
+    .form-group label {
+        display: block;
+        margin: 8px 0;
     }
 
     .buttons {
         display: flex;
         justify-content: space-between;
-        margin-top: 20px;
+        margin-top: 24px;
     }
 
     .next-button,
@@ -246,6 +354,7 @@
         border: none;
         border-radius: 5px;
         cursor: pointer;
+        transition: background-color 0.2s;
     }
 
     .next-button {
@@ -266,43 +375,76 @@
         background-color: #d32f2f;
     }
 
-    .day-option {
-        display: inline-block;
-        margin-right: 10px;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 5px;
-        background-color: #e0e0e0;
+    .days-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 12px 0;
     }
 
-    .selected {
+    .day-option {
+        padding: 8px 16px;
+        border-radius: 4px;
+        background-color: #e0e0e0;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .day-option:hover {
+        background-color: #d0d0d0;
+    }
+
+    .day-option.selected {
         background-color: #4caf50;
         color: white;
     }
 
-    .time-label {
-        font-size: 12px;
-        margin-bottom: 4px;
-    }
-
     .part-day-options {
         display: flex;
-        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
     }
 
     textarea {
         width: 100%;
-        height: 80px;
-        margin-top: 10px;
-        padding: 10px;
+        min-height: 100px;
+        padding: 12px;
         border-radius: 4px;
         border: 1px solid #ccc;
+        resize: vertical;
     }
 
     .review-box {
         background-color: #f7f7f7;
-        padding: 10px;
+        padding: 16px;
         border-radius: 4px;
         margin-bottom: 20px;
+    }
+
+    .selected-days {
+        margin-top: 8px;
+        font-size: 0.9em;
+        color: #666;
+    }
+
+    @media (max-width: 480px) {
+        .modal-content {
+            padding: 16px;
+            width: 95%;
+        }
+
+        .days-container {
+            justify-content: center;
+        }
+
+        .buttons {
+            flex-direction: column-reverse;
+            gap: 12px;
+        }
+
+        .buttons button {
+            width: 100%;
+        }
     }
 </style>
