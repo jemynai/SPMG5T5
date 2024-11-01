@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from datetime import datetime
 
-db = get_db()
+db = Firebase().get_db()
 
 # Define a blueprint for arrangement-related routes
 arrangement_bp = Blueprint('arrangements', __name__)

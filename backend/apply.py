@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from datetime import datetime
 
 # Create a new blueprint for handling applications
@@ -14,7 +14,7 @@ def submit_application():
 
     try:
         # Get Firestore DB instance
-        db = get_db()
+        db = Firebase().get_db()
 
         # Parse data from the request
         application_data = request.get_json()

@@ -1,11 +1,14 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from functools import wraps
 import firebase_admin
 from firebase_admin import auth, firestore
 from datetime import datetime, timedelta
 
-db = get_db()
+
+# Initialize Firestore database
+db = Firebase().get_db()
+
 hr_view_bp = Blueprint('hr_view', __name__)
 
 def require_auth(f):

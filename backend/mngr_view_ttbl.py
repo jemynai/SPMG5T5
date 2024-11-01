@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from classes import TimetableService, Arrangement
 from flask_cors import CORS
 from typing import Dict, Tuple
 from datetime import datetime, timezone
 
+db = Firebase().get_db()
+# Create blueprint
 mngr_view_bp = Blueprint('mngr_view', __name__)
 
 ALLOWED_ORIGINS = [
@@ -25,7 +27,7 @@ CORS(mngr_view_bp, resources={
     }
 })
 
-db = get_db()
+# Initialize services
 timetable_service = TimetableService(db)
 
 def format_date(date_obj: datetime) -> str:

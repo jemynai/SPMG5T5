@@ -1,13 +1,32 @@
+from dataclasses import dataclass
 from typing import List, Dict, Optional
-from firebase_admin import credentials, firestore
 from datetime import datetime
+from firebase_admin import credentials, firestore
+
+@dataclass
+class Name:
+    first_name: str
+    last_name: str
+
+@dataclass
+class ContactInfo:
+    email: str
+    country: str
+
+@dataclass
+class JobDetails:
+    dept: str
+    position: str
+    manager: str
 
 class Employee:
-    def __init__(self, user_id: str, name: str, email: str, role: str, managers: List[str], 
+    def __init__(self, user_id: str, name: Name, contact_info: ContactInfo, 
+                 job_details: JobDetails, role: str, managers: List[str], 
                  department: str = None, status: str = 'office'):
         self.user_id = user_id
         self.name = name
-        self.email = email
+        self.contact_info = contact_info
+        self.job_details = job_details
         self.role = role
         self.managers = managers
         self.department = department
@@ -15,10 +34,24 @@ class Employee:
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'Employee':
+        name = Name(
+            first_name=data.get('name', {}).get('first_name', ''),
+            last_name=data.get('name', {}).get('last_name', '')
+        )
+        contact_info = ContactInfo(
+            email=data.get('contact_info', {}).get('email', ''),
+            country=data.get('contact_info', {}).get('country', '')
+        )
+        job_details = JobDetails(
+            dept=data.get('job_details', {}).get('dept', ''),
+            position=data.get('job_details', {}).get('position', ''),
+            manager=data.get('job_details', {}).get('manager', '')
+        )
         return cls(
             user_id=data.get('user_id'),
-            name=data.get('name'),
-            email=data.get('email'),
+            name=name,
+            contact_info=contact_info,
+            job_details=job_details,
             role=data.get('role'),
             managers=data.get('managers', []),
             department=data.get('department'),
@@ -28,16 +61,27 @@ class Employee:
     def to_dict(self) -> Dict:
         return {
             'user_id': self.user_id,
-            'name': self.name,
-            'email': self.email,
+            'name': {
+                'first_name': self.name.first_name,
+                'last_name': self.name.last_name
+            },
+            'contact_info': {
+                'email': self.contact_info.email,
+                'country': self.contact_info.country
+            },
+            'job_details': {
+                'dept': self.job_details.dept,
+                'position': self.job_details.position,
+                'manager': self.job_details.manager
+            },
             'role': self.role,
             'managers': self.managers,
             'department': self.department,
             'status': self.status,
             'lastUpdated': datetime.now()
         }
-    
-    def save_to_firebase(self, db):
+
+    def save_to_firebase(self, db: firestore.Client) -> bool:
         try:
             db.collection('employees').document(self.user_id).set(self.to_dict())
             return True
@@ -45,7 +89,7 @@ class Employee:
             print(f"Error saving employee to Firebase: {str(e)}")
             return False
     
-    def update_status(self, db, new_status: str):
+    def update_status(self, db: firestore.Client, new_status: str) -> bool:
         try:
             self.status = new_status
             db.collection('employees').document(self.user_id).update({
@@ -57,7 +101,7 @@ class Employee:
             print(f"Error updating employee status: {str(e)}")
             return False
 
-    def view_arrangements(self, db) -> List[Dict]:
+    def view_arrangements(self, db: firestore.Client) -> List[Dict]:
         try:
             arrangements = db.collection('arrangements')\
                            .where('employee_id', '==', self.user_id)\
@@ -68,23 +112,37 @@ class Employee:
             return []
 
 class Manager(Employee):
-    def __init__(self, user_id: str, name: str, email: str, role: str, managers: List[str], 
+    def __init__(self, user_id: str, name: Name, contact_info: ContactInfo, 
+                 job_details: JobDetails, role: str, managers: List[str], 
                  team: List[str], department: str = None, status: str = 'office'):
-        super().__init__(user_id, name, email, role, managers, department, status)
+        super().__init__(user_id, name, contact_info, job_details, role, managers, department, status)
         self.team = team
 
     @classmethod
     def from_dict(cls, data: Dict) -> 'Manager':
-        employee = super().from_dict(data)
+        name = Name(
+            first_name=data.get('name', {}).get('first_name', ''),
+            last_name=data.get('name', {}).get('last_name', '')
+        )
+        contact_info = ContactInfo(
+            email=data.get('contact_info', {}).get('email', ''),
+            country=data.get('contact_info', {}).get('country', '')
+        )
+        job_details = JobDetails(
+            dept=data.get('job_details', {}).get('dept', ''),
+            position=data.get('job_details', {}).get('position', ''),
+            manager=data.get('job_details', {}).get('manager', '')
+        )
         return cls(
-            user_id=employee.user_id,
-            name=employee.name,
-            email=employee.email,
-            role=employee.role,
-            managers=employee.managers,
+            user_id=data.get('user_id'),
+            name=name,
+            contact_info=contact_info,
+            job_details=job_details,
+            role=data.get('role'),
+            managers=data.get('managers', []),
             team=data.get('team', []),
-            department=employee.department,
-            status=employee.status
+            department=data.get('department'),
+            status=data.get('status', 'office')
         )
 
     def to_dict(self) -> Dict:
@@ -92,7 +150,7 @@ class Manager(Employee):
         data['team'] = self.team
         return data
 
-    def view_team_arrangements(self, db, status_filter: Optional[str] = None) -> List[Dict]:
+    def view_team_arrangements(self, db: firestore.Client, status_filter: Optional[str] = None) -> List[Dict]:
         try:
             query = db.collection('arrangements')\
                      .where('department', '==', self.department)
@@ -106,7 +164,7 @@ class Manager(Employee):
             print(f"Error viewing team arrangements: {str(e)}")
             return []
 
-    def update_arrangement_status(self, db, arrangement_id: str, new_status: str) -> bool:
+    def update_arrangement_status(self, db: firestore.Client, arrangement_id: str, new_status: str) -> bool:
         try:
             db.collection('arrangements').document(arrangement_id).update({
                 'status': new_status,
@@ -119,7 +177,7 @@ class Manager(Employee):
             return False
 
 class HR(Employee):
-    def view_employee_list(self, db, department_filter: Optional[str] = None) -> List[Dict]:
+    def view_employee_list(self, db: firestore.Client, department_filter: Optional[str] = None) -> List[Dict]:
         try:
             query = db.collection('employees')
             if department_filter:
@@ -131,7 +189,7 @@ class HR(Employee):
             print(f"Error viewing employee list: {str(e)}")
             return []
 
-    def edit_employee_role(self, db, employee_id: str, new_role: str) -> bool:
+    def edit_employee_role(self, db: firestore.Client, employee_id: str, new_role: str) -> bool:
         try:
             db.collection('employees').document(employee_id).update({
                 'role': new_role,
@@ -143,7 +201,7 @@ class HR(Employee):
             print(f"Error updating employee role: {str(e)}")
             return False
 
-    def get_department_stats(self, db) -> Dict:
+    def get_department_stats(self, db: firestore.Client) -> Dict:
         try:
             employees = db.collection('employees').stream()
             stats = {}
@@ -164,9 +222,15 @@ class HR(Employee):
             print(f"Error getting department stats: {str(e)}")
             return {}
 
+@dataclass
+class ArrangementDetails:
+    location: str
+    description: str
+    approved_by: Optional[str] = None
+
 class Arrangement:
     def __init__(self, arrangement_id: str, employee_id: str, date: datetime, 
-                 shift: str, status: str, details: Dict):
+                 shift: str, status: str, details: ArrangementDetails):
         self.arrangement_id = arrangement_id
         self.employee_id = employee_id
         self.date = date
@@ -176,13 +240,19 @@ class Arrangement:
         
     @classmethod
     def from_dict(cls, arrangement_id: str, data: Dict) -> 'Arrangement':
+        details_data = data.get('details', {})
+        details = ArrangementDetails(
+            location=details_data.get('location', ''),
+            description=details_data.get('description', ''),
+            approved_by=details_data.get('approved_by')
+        )
         return cls(
             arrangement_id=arrangement_id,
             employee_id=data.get('employee_id'),
             date=data.get('date'),
             shift=data.get('shift'),
             status=data.get('status'),
-            details=data.get('details', {})
+            details=details
         )
         
     def to_dict(self) -> Dict:
@@ -192,11 +262,15 @@ class Arrangement:
             'date': self.date,
             'shift': self.shift,
             'status': self.status,
-            'details': self.details,
+            'details': {
+                'location': self.details.location,
+                'description': self.details.description,
+                'approved_by': self.details.approved_by
+            },
             'last_updated': datetime.now()
         }
 
-    def save_to_firebase(self, db) -> bool:
+    def save_to_firebase(self, db: firestore.Client) -> bool:
         try:
             db.collection('arrangements').document(self.arrangement_id).set(self.to_dict())
             return True
@@ -204,7 +278,7 @@ class Arrangement:
             print(f"Error saving arrangement to Firebase: {str(e)}")
             return False
 
-    def update_status(self, db, new_status: str, updated_by: str) -> bool:
+    def update_status(self, db: firestore.Client, new_status: str, updated_by: str) -> bool:
         try:
             self.status = new_status
             db.collection('arrangements').document(self.arrangement_id).update({
