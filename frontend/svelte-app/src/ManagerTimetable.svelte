@@ -1,19 +1,10 @@
 <script>
-  import { onMount } from 'svelte';
-  import { Calendar, Loader2 } from 'lucide-svelte';
-  import { Alert, AlertDescription } from '@/components/ui/alert';
-  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-  import { Input } from '@/components/ui/input';
-  import { Button } from '@/components/ui/button';
-  import { PieChart, Pie, Cell, Legend, ResponsiveContainer, Tooltip } from 'recharts';
-
   let departmentId = '';
   let statusFilter = '';
   let arrangements = [];
+  let summary = { total: 0, status_distribution: { office: { count: 0 }, home: { count: 0 } } };
   let error = '';
   let loading = false;
-
-  const API_BASE_URL = 'http://localhost:8080';
 
   async function fetchTimetableData() {
     if (!departmentId) {
@@ -25,7 +16,7 @@
     error = '';
 
     try {
-      let url = `${API_BASE_URL}/mngr_view_ttbl?department_id=${encodeURIComponent(departmentId)}`;
+      let url = `http://localhost:8080/mngr_view_ttbl?department_id=${encodeURIComponent(departmentId)}`;
       if (statusFilter) {
         url += `&status=${encodeURIComponent(statusFilter)}`;
       }
@@ -34,169 +25,213 @@
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
+        credentials: 'include'
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to fetch timetable data');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch timetable data');
       }
 
-      arrangements = data.arrangements;
+      arrangements = result.arrangements;
+      summary = result.summary;
     } catch (err) {
       error = err.message || 'Error fetching timetable data';
       arrangements = [];
+      summary = { total: 0, status_distribution: { office: { count: 0 }, home: { count: 0 } } };
     } finally {
       loading = false;
     }
   }
 
-  function formatDate(dateString) {
-    return new Date(dateString).toLocaleString('en-US', {
+  function formatDate(isoString) {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleString('en-US', {
       weekday: 'short',
+      year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
     });
   }
-
-  $: locationDistribution = arrangements.length ? 
-    Object.entries(
-      arrangements.reduce((acc, curr) => {
-        acc[curr.status] = (acc[curr.status] || 0) + 1;
-        return acc;
-      }, {})
-    ).map(([name, value]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      value,
-      percentage: ((value / arrangements.length) * 100).toFixed(1)
-    })) : [];
-
-  const COLORS = ['#3b82f6', '#22c55e']; // Blue for office, Green for home
 </script>
 
-<div class="max-w-4xl mx-auto p-4 space-y-4">
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <Card>
-      <CardHeader>
-        <CardTitle class="flex items-center gap-2">
-          <Calendar class="h-6 w-6" />
-          Team Timetable Dashboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <Input
-            placeholder="Enter Department ID"
-            bind:value={departmentId}
-            class="w-full"
-          />
-          <select
-            bind:value={statusFilter}
-            class="w-full rounded-md border border-gray-200 px-3 py-2"
-          >
-            <option value="">All Locations</option>
-            <option value="office">Office</option>
-            <option value="home">Home</option>
-          </select>
-          <Button 
-            on:click={fetchTimetableData} 
-            class="w-full"
-            disabled={loading}
-          >
-            {#if loading}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              Loading...
-            {:else}
-              View Timetable
-            {/if}
-          </Button>
+<div class="container">
+  <h1>Team Timetable Dashboard</h1>
+
+  <div class="controls">
+    <input
+      type="text"
+      placeholder="Enter Department ID"
+      bind:value={departmentId}
+    />
+    <select bind:value={statusFilter}>
+      <option value="">All Locations</option>
+      <option value="office">Office</option>
+      <option value="home">Home</option>
+    </select>
+    <button 
+      on:click={fetchTimetableData} 
+      disabled={loading}
+    >
+      {loading ? 'Loading...' : 'View Timetable'}
+    </button>
+  </div>
+
+  {#if error}
+    <div class="error">
+      {error}
+    </div>
+  {/if}
+
+  {#if summary.total > 0}
+    <div class="stats">
+      <h2>Summary</h2>
+      <ul>
+        <li>Total Arrangements: {summary.total}</li>
+        <li>Office: {summary.status_distribution.office.count} 
+            ({summary.status_distribution.office.percentage}%)
+        </li>
+        <li>Home: {summary.status_distribution.home.count}
+            ({summary.status_distribution.home.percentage}%)
+        </li>
+      </ul>
+    </div>
+  {/if}
+
+  <div class="arrangements">
+    {#each arrangements as arrangement (arrangement.id)}
+      <div class="arrangement-card {arrangement.status}">
+        <div class="arrangement-header">
+          <h3>Employee ID: {arrangement.employee_id}</h3>
+          <span class="status">{arrangement.status}</span>
         </div>
-
-        {#if error}
-          <Alert variant="destructive" class="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        {/if}
-
-        <div class="space-y-2">
-          {#each arrangements as arrangement, index (arrangement.id || index)}
-            <div
-              class="p-4 rounded-lg border {
-                arrangement.status === 'office' ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'
-              }"
-            >
-              <div class="flex justify-between items-center">
-                <div>
-                  <h3 class="font-medium">{arrangement.employee_id}</h3>
-                  <p class="text-sm text-gray-600">ID: {arrangement.id}</p>
-                </div>
-                <div class="text-right">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {
-                    arrangement.status === 'office' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                  }">
-                    {arrangement.status.toUpperCase()}
-                  </span>
-                  <p class="text-sm text-gray-600 mt-1">{formatDate(arrangement.date)}</p>
-                </div>
-              </div>
-            </div>
-          {/each}
+        <div class="arrangement-details">
+          <p>Arrangement ID: {arrangement.id}</p>
+          <p>Department ID: {arrangement.department_id}</p>
+          <p>Created: {formatDate(arrangement.created_at)}</p>
+          <p>Updated: {formatDate(arrangement.updated_at)}</p>
+          {#if arrangement.details}
+            <p>Location: {arrangement.details.location || 'N/A'}</p>
+            <p>Description: {arrangement.details.description || 'N/A'}</p>
+          {/if}
         </div>
-      </CardContent>
-    </Card>
-
-    <Card>
-      <CardHeader>
-        <CardTitle>Location Distribution</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {#if arrangements.length > 0}
-          <div class="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={locationDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percentage }) => `${name}: ${percentage}%`}
-                >
-                  {#each locationDistribution as entry, index}
-                    <Cell fill={COLORS[index % COLORS.length]} />
-                  {/each}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        {:else}
-          <div class="h-64 flex items-center justify-center text-gray-500">
-            No data available
-          </div>
-        {/if}
-      </CardContent>
-    </Card>
+      </div>
+    {/each}
   </div>
 </div>
 
 <style>
-  :global(.animate-spin) {
-    animation: spin 1s linear infinite;
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
   }
 
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  h1 {
+    margin-bottom: 20px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  input, select, button {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .error {
+    padding: 10px;
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  .stats {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f5f5f5;
+    border-radius: 4px;
+  }
+
+  .stats ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .stats li {
+    margin: 5px 0;
+  }
+
+  .arrangements {
+    display: grid;
+    gap: 15px;
+  }
+
+  .arrangement-card {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .arrangement-card.office {
+    background: #e3f2fd;
+  }
+
+  .arrangement-card.home {
+    background: #e8f5e9;
+  }
+
+  .arrangement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.875em;
+    text-transform: uppercase;
+  }
+
+  .office .status {
+    background: #bbdefb;
+  }
+
+  .home .status {
+    background: #c8e6c9;
+  }
+
+  .arrangement-details {
+    font-size: 0.875em;
+    color: #666;
+  }
+
+  .arrangement-details p {
+    margin: 5px 0;
   }
 </style>
