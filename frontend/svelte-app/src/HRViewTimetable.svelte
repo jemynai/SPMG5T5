@@ -1,6 +1,5 @@
 <script>
-    import { onMount, onDestroy } from 'svelte';
-    import { employeeStore } from './employeeStore';
+    import { onMount } from 'svelte';
     
     // Filter states
     let departments = ['Engineering', 'Marketing', 'HR', 'Finance', 'Sales'];
@@ -17,43 +16,74 @@
     let employees = [];
     let loading = true;
     let error = null;
-    let unsubscribe;
     
-    employeeStore.subscribe(data => {
-        employees = data;
+    // Fetch employees with optional filters
+    async function fetchEmployees(filters = {}) {
+    try {
+        loading = true;
+        const queryParams = new URLSearchParams();
+        
+        if (filters.department && filters.department !== 'All') {
+            queryParams.append('department', filters.department);
+        }
+        if (filters.status && filters.status !== 'All') {
+            queryParams.append('status', filters.status);
+        }
+        if (filters.search) {
+            queryParams.append('search', filters.search);
+        }
+
+        const response = await fetch(`/api/employees?${queryParams}`);
+        if (!response.ok) throw new Error('Failed to fetch employees');
+        
+        const data = await response.json();
+        employees = data.employees || [];
+    } catch (err) {
+        error = 'Failed to load employee data';
+        console.error('Error:', err);
+    } finally {
         loading = false;
-    });
-    
+    }
+}
+
+    // Update employee status
+    async function updateEmployeeStatus(employeeId, newStatus) {
+    try {
+        const response = await fetch(`/api/employee/${employeeId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update status');
+        
+        await fetchEmployees();
+    } catch (error) {
+        console.error('Error updating employee status:', error);
+    }
+}
+
+    // Initialize data
     onMount(() => {
-        try {
-            // Initialize the store and get real-time updates
-            unsubscribe = employeeStore.init();
-        } catch (err) {
-            error = 'Failed to load employee data';
-            loading = false;
-        }
+        fetchEmployees();
     });
-    
-    onDestroy(() => {
-        // Clean up the subscription
-        if (unsubscribe) {
-            unsubscribe();
+
+    // Apply filters when changes occur
+    $: {
+        if (!loading) {
+            fetchEmployees({
+                department: selectedDepartment,
+                status: selectedStatus,
+                search: searchQuery
+            });
         }
-    });
+    }
     
-    // Filter functions
+    // Filter employees client-side for date range
     $: filteredEmployees = employees.filter(emp => {
         if (!emp) return false;
-        
-        // Department filter
-        if (selectedDepartment !== 'All' && emp.department !== selectedDepartment) {
-            return false;
-        }
-        
-        // Status filter
-        if (selectedStatus !== 'All' && emp.status !== selectedStatus) {
-            return false;
-        }
         
         // Date range filter
         if (selectedDateRange === 'custom') {
@@ -63,15 +93,6 @@
             if (scheduleDate < start || scheduleDate > end) {
                 return false;
             }
-        }
-        
-        // Search filter
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            return emp.name.toLowerCase().includes(query) || 
-                   emp.id.toLowerCase().includes(query) ||
-                   emp.department.toLowerCase().includes(query) ||
-                   emp.email?.toLowerCase().includes(query);
         }
         
         return true;
@@ -93,16 +114,8 @@
         showDetailModal = false;
         selectedEmployee = null;
     }
-    
-    async function updateEmployeeStatus(employeeId, newStatus) {
-        try {
-            await employeeStore.updateEmployeeStatus(employeeId, newStatus);
-        } catch (error) {
-            console.error('Error updating employee status:', error);
-            // Handle error (show notification, etc.)
-        }
-    }
 </script>
+
 <main class="container mx-auto p-4">
     {#if loading}
         <div class="flex justify-center items-center h-64">
@@ -346,10 +359,28 @@
                                 {/each}
                             </div>
                         </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button
+                                class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 rounded-md border hover:bg-gray-50"
+                                on:click={closeEmployeeDetail}
+                            >
+                                Close
+                            </button>
+                            <button
+                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                                on:click={() => updateEmployeeStatus(
+                                    selectedEmployee.id,
+                                    selectedEmployee.status === 'office' ? 'remote' : 'office'
+                                )}
+                            >
+                                Toggle Status
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         {/if}
     {/if}
 </main>
-        
