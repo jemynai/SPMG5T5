@@ -1,22 +1,50 @@
 import requests
+from typing import Optional
+from dataclasses import dataclass
+
+@dataclass
+class Name:
+    first_name: str
+    last_name: str
+
+@dataclass
+class ContactInfo:
+    email: str
+    country: str
+
+@dataclass
+class JobDetails:
+    dept: str
+    position: str
+    manager: str
+
 from typing import List, Dict, Optional
 from firebase_admin import firestore
 from datetime import datetime
 
 class Employee:
-    def __init__(self, user_id, name, email, role, managers):
+    def __init__(self, user_id: str, name: Name, contact_info: ContactInfo, job_details: JobDetails, role: str, password: Optional[str] = None):
         self.user_id = user_id
         self.name = name
-        self.email = email
+        self.contact_info = contact_info
+        self.job_details = job_details
         self.role = role
-        self.managers = managers
-    
-    def login(self):
-        pass
-    
-    def logout(self):
-        pass
-    
+        self.password = password
+        
+    def to_dict(self):
+        return {
+            'user_id': self.user_id,
+            'first_name': self.name.first_name,
+            'last_name': self.name.last_name,
+            'email': self.contact_info.email,
+            'country': self.contact_info.country,
+            'dept': self.job_details.dept,
+            'position': self.job_details.position,
+            'rpt_manager': self.job_details.manager,
+            'role': self.role,
+            'password': self.password
+        }
+
     def create_arrangement(self):
         pass
     
@@ -31,40 +59,54 @@ class Employee:
         else:
             print(f"Failed with status code: {response.status_code}")
             print(response.text)
+    
+# class Manager(Employee):
+#     def __init__(self, user_id, name, email, role, managers, team):
+#         super().__init__(user_id, name, email, role, managers)
+#         self.team = team
 
-class Manager(Employee):
-    def __init__(self, user_id, name, email, role, managers, team):
-        super().__init__(user_id, name, email, role, managers)
-        self.team = team
 
-    def accept_arrangement(self, arrangement_id):
-        pass
+#     def accept_arrangement(self, arrangement_id):
+#         pass
     
-    def reject_arrangement(self, arrangement_id):
-        pass
+#     def reject_arrangement(self, arrangement_id):
+#         pass
     
-    def view_pending_arrangements(self):
-        pass
+#     def view_pending_arrangements(self):
+#         pass
     
-    def view_team_arrangements(self, status_filter: Optional[str] = None) -> List[Dict]:
-        url = f"http://localhost:8000/mngr_view_ttbl?department_id={self.user_id}"
-        if status_filter:
-            url += f"&status={status_filter}"
+
+#     def view_team_arrangements(self):
+#         pass
+    
+# class HR(Employee):
+#     def edit_employee_role(employee_id, new_role):
+#         pass
+    
+#     def view_employee_list(self):
+#         pass
+    
+
+#     def view_team_arrangements(self, status_filter: Optional[str] = None) -> List[Dict]:
+#         url = f"http://localhost:8000/mngr_view_ttbl?department_id={self.user_id}"
+#         if status_filter:
+#             url += f"&status={status_filter}"
             
-        try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raise an exception for bad status codes
-            return response.json().get('arrangements', [])
-        except requests.exceptions.RequestException as e:
-            print(f"Error viewing team arrangements: {str(e)}")
-            return []
+#         try:
+#             response = requests.get(url)
+#             response.raise_for_status()  # Raise an exception for bad status codes
+#             return response.json().get('arrangements', [])
+#         except requests.exceptions.RequestException as e:
+#             print(f"Error viewing team arrangements: {str(e)}")
+#             return []
     
-class HR(Employee):
-    def edit_employee_role(self, employee_id, new_role):
-        pass
+# class HR(Employee):
+#     def edit_employee_role(self, employee_id, new_role):
+#         pass
     
-    def view_employee_list(self):
-        pass
+#     def view_employee_list(self):
+#         pass
+
 
 class Arrangement:
     def __init__(self, arrangement_id, employee_id, date, shift, status, details):

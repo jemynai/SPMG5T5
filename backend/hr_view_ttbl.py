@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from functools import wraps
 import firebase_admin
 from firebase_admin import auth
 
-db = get_db()
+
+# Initialize Firestore database
+db = Firebase().get_db()
 
 hr_view_bp = Blueprint('hr_view', __name__)
 

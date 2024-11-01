@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
-from firebase import get_db
+from services.firebase import Firebase
 from datetime import datetime
 
-db = get_db()
+db = Firebase().get_db()
 
 withdrawal_bp = Blueprint('withdrawals', __name__)
 
