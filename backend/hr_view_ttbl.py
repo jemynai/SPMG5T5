@@ -32,9 +32,6 @@ class HRDashboard:
         self.db = db
 
     def get_all_employees(self, filters=None):
-        """
-        Fetch all employees with optional filters
-        """
         try:
             query = self.db.collection('employees')
 

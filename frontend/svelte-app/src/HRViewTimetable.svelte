@@ -1,7 +1,6 @@
-<!-- HRViewTimetable.svelte -->
 <script>
     import { onMount, onDestroy } from 'svelte';
-    import { employeeStore } from './stores/employeeStore';
+    import { employeeStore } from './employeeStore';
     
     // Filter states
     let departments = ['Engineering', 'Marketing', 'HR', 'Finance', 'Sales'];
@@ -20,7 +19,6 @@
     let error = null;
     let unsubscribe;
     
-    // Subscribe to employee store
     employeeStore.subscribe(data => {
         employees = data;
         loading = false;
