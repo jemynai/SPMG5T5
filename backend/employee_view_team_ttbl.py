@@ -22,17 +22,20 @@ def get_employee_arrangements():
         ## this section is broken, clarify what defines teammates with grp
         
         # arrangements = db.collection('arrangements').where('employee_id', '==', employee_id).stream()
-        # parse_arr(arrangements)
+
         # Query the users collection
-        query1 = db.collection('users').where('employee_id', '==', employee_id).stream()
-
+        user_doc = db.collection('users').document(employee_id).get()
         # Extract rpt_manager from the query results
-        for user in query1:
-            rpt_manager = user.to_dict().get('rpt_manager')
-            print(rpt_manager)  # Output the rpt_manager
-
-        query2 = db.collection('arrangements').where('employee_id', '==', employee_id).where('supervisor', '==', [1]).stream()
-                
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            rpt_manager = user_data['rpt_manager']
+        else:
+            return ('No user for that employee_id.'), 400
+        
+        arrangements = db.collection('arrangements').where('supervisors', '==', rpt_manager).stream()
+        print('you reached here')
+        parse_arr(arrangements)
+        
         return jsonify({"arrangements": arrangements_list}), 200
 
     except Exception as e:

@@ -19,7 +19,6 @@
 
 	function updateView(view) {
 		current_view = view;
-		console.log(current_view)
 		fetchArrangements()
 	}
 
@@ -85,10 +84,6 @@
 			} catch (error) {
 				console.error('Error fetching data:', error);
 			}
-
-			arrangementsArray = [];
-			options.events = [];
-			console.log('hi')
 		}
 	}
 
@@ -114,12 +109,12 @@
 </script>
 
 <main>
-	<h1>Work From Home Arrangements</h1>
+	<h1>My Work From Home Arrangements</h1>
 	<div>
 		<p>Current user:</p>
 		<select id="current_user" on:change="{(event) => {current_user = event.target.value; fetchArrangements();}}">
 			<option value="130002">130002</option>
-			<option value="130010">130010</option>
+			<option value="140008">140008</option>
 		</select>
 	</div>
 	<div class="current-view-container">
