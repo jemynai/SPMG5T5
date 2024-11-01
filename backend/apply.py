@@ -32,9 +32,14 @@ def submit_application():
             'days': application_data.get('days'),
             'half_day': application_data.get('halfDay'),
             'reason': application_data.get('reason'),
+            'status': application_data.get('status'),
             'created_at': created_at
+            
         })
 
+    
+
+        
         return jsonify({"message": "Application submitted successfully"}), 200
 
     except Exception as e:

@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask,request
 from users import users_bp
 from arrangements import arrangement_bp
 from withdrawals import withdrawal_bp
@@ -15,7 +15,7 @@ from CancelRequest import pending_request_bp
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Register all blueprints
 app.register_blueprint(users_bp)
