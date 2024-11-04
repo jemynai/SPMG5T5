@@ -19,14 +19,14 @@
         }
     }
   
-    async function withdrawRequest() {
+    async function cancelRequest() {
   
     try {
-      const response = await fetch(`http://127.0.0.1:5000/arrangements/withdraw?aID=${selectedRow.arrangementId}`, {
+      const response = await fetch(`http://127.0.0.1:5000/arrangements/cancel?aID=${selectedRow.arrangementId}`, {
           method: 'POST'
       });
   
-    if (!response.ok) throw new Error("Failed to withdraw request");
+    if (!response.ok) throw new Error("Failed to cancel request");
   
       // Refresh the table data after rejecting
       await fetchTableData();
@@ -90,7 +90,7 @@
                     <td>{person.supervisors}</td>
                     <td>
                         <button on:click={() => editPage(person)}>Edit</button>
-                        <button on:click={() => cancelAlert(person)}>Withdraw</button>
+                        <button on:click={() => cancelAlert(person)}>Cancel</button>
                     </td>
                 </tr>
             {/each}
@@ -101,8 +101,8 @@
     {#if showModal}
         <div class="overlay">
             <div class="modal-content">
-                <p>Are you sure you want to withdraw this request?</p>
-                <button on:click={withdrawRequest}>Yes</button>
+                <p>Are you sure you want to cancel this request?</p>
+                <button on:click={cancelRequest}>Yes</button>
                 <button on:click={closeModal}>Back</button>
             </div>
         </div>

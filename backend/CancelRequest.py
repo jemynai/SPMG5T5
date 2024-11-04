@@ -27,7 +27,7 @@ def get_pending():
     return jsonify(tableData)
 
 
-@pending_request_bp.route('/arrangements/withdraw', methods=['POST'])
+@pending_request_bp.route('/arrangements/cancel', methods=['POST'])
 def approve_arr():
 
     db = get_db()
@@ -42,11 +42,11 @@ def approve_arr():
         
         # Check if the document exists
         if arrangement_ref.get().exists:
-            arrangement_ref.update({'status': 'Withdrawn'})
+            arrangement_ref.update({'status': 'Cancelled'})
         
         
-        return jsonify({"message": "Arrangement has been withdrawn."}), 200
+        return jsonify({"message": "Arrangement has been cancelled."}), 200
     
     except Exception as e:
         print(f"Error updating arrangements: {e}")
-        return jsonify({"error": "Failed to withdraw arrangement"}), 500
+        return jsonify({"error": "Failed to cancel arrangement"}), 500
