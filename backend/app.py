@@ -32,4 +32,4 @@ app.register_blueprint(EmployeeController().bp)
 
 # if mac has issue running, change to port 8000
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port='8000', debug=True)
