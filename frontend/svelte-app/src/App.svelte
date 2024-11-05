@@ -10,8 +10,9 @@
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
     import CancelRequest from './CancelRequest.svelte';
 
-    // Create a store for the current route
+    // Create stores for route management
     const currentRoute = writable('/arrangements');
+    const isRouteTransitioning = writable(false);
 
     // Modal state
     let showModal = false;
@@ -20,16 +21,21 @@
     const openModal = () => showModal = true;
     const closeModal = () => showModal = false;
 
-    // Navigation function
-    const navigateTo = (path) => {
+    // Enhanced navigation function with transition handling
+    const navigateTo = async (path) => {
+        if ($currentRoute === path) return;
+        
+        isRouteTransitioning.set(true);
+        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay for transition
         currentRoute.set(path);
+        isRouteTransitioning.set(false);
     };
 
     // Handle browser back/forward buttons
     if (typeof window !== 'undefined') {
         window.onpopstate = (event) => {
             if (event.state?.path) {
-                currentRoute.set(event.state.path);
+                navigateTo(event.state.path);
             }
         };
     }
@@ -60,7 +66,7 @@
         </button>
     </nav>
 
-    <div class="content">
+    <div class="content" class:transitioning={$isRouteTransitioning}>
         {#if $currentRoute === '/arrangements'}
             <Arrangements />
         {:else if $currentRoute === '/withdrawal-request'}
@@ -157,6 +163,12 @@
 
     .content {
         margin: 2rem 0;
+        opacity: 1;
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    .content.transitioning {
+        opacity: 0;
     }
 
     .apply-button {
