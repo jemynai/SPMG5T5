@@ -1,5 +1,5 @@
 from flask import jsonify, Blueprint, request
-from firebase import get_db  
+from services.firebase import Firebase
 
 # Create a Flask Blueprint
 pending_request_bp = Blueprint('pending_request', __name__)
@@ -8,7 +8,7 @@ pending_request_bp = Blueprint('pending_request', __name__)
 # Your existing function to get pending arrangements
 @pending_request_bp.route('/pending-arrangements', methods=['GET'])
 def get_pending():
-    db = get_db()  # Initialize Firestore DB
+    db = Firebase().get_db()  # Initialize Firestore DB
     employee_id = request.args.get('eid') 
     pending_arrangements_all= db.collection('arrangements').where('status', '==', 'pending')
 
@@ -30,7 +30,7 @@ def get_pending():
 @pending_request_bp.route('/arrangements/cancel', methods=['POST'])
 def approve_arr():
 
-    db = get_db()
+    db = Firebase().get_db()
     arrangement_id = request.args.get("aID")
 
     if not arrangement_id:

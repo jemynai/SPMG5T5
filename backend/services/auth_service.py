@@ -9,9 +9,13 @@ class AuthService:
         self.employee_repo = EmployeeRepository(Firebase().get_db())
         
     def authenticate(self, email: str, password: str):
+        print("authenticating")
         user = self.employee_repo.get_employee_by_email(email)
         if user is None:
+            print("no user found")
             return None
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             return None
-        return JwtUtil.generate_token(user)
+        token = JwtUtil.generate_token(user)
+        print(f"success, generated token {token}")
+        return token

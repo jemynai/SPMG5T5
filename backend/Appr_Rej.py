@@ -1,5 +1,5 @@
 from flask import jsonify, request, Blueprint
-from firebase import get_db  # Ensure your file/module is named firebase.py and has get_db()
+from services.firebase import Firebase  # Ensure your file/module is named firebase.py and has get_db()
 
 # Create a Flask Blueprint
 Appr_Rej_bp = Blueprint('Appr_Rej', __name__)
@@ -9,7 +9,7 @@ Appr_Rej_bp = Blueprint('Appr_Rej', __name__)
 @Appr_Rej_bp.route('/dir-mgr-pending', methods=['GET'])
 
 def get_staff_pending():
-    db = get_db()  # Initialize Firestore DB
+    db = Firebase().get_db()  # Initialize Firestore DB
     pending_arrangements = db.collection('arrangements').where('status', '==', 'pending').stream()
     
     tableData = []
@@ -23,7 +23,7 @@ def get_staff_pending():
 
 @Appr_Rej_bp.route('/arrangements/reject', methods=['POST'])
 def reject_arr():
-    db = get_db()
+    db = Firebase().get_db()
     arrangement_id = request.args.get("aID")
     
 
@@ -47,7 +47,7 @@ def reject_arr():
 @Appr_Rej_bp.route('/arrangements/approve', methods=['POST'])
 def approve_arr():
 
-    db = get_db()
+    db = Firebase().get_db()
     arrangement_id = request.args.get("aID")
 
     if not arrangement_id:
