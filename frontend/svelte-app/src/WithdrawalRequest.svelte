@@ -3,52 +3,65 @@
     let withdrawalRequests = [];
     let loading = false;
     let error = null;
+    
+    // Get employee ID from your auth system
+    const employeeId = localStorage.getItem('employeeId');
 
     async function fetchWithdrawalRequests() {
         loading = true;
         error = null;
         try {
-            const response = await fetch("http://localhost:8080/get_arrangements");
+            const response = await fetch(`http://localhost:5000/get_user_applications?eid=${employeeId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
             if (!response.ok) {
-                throw new Error('Failed to fetch arrangements');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
             const data = await response.json();
-            withdrawalRequests = data.arrangements.filter(arr => 
-                arr.status === 'approved' || arr.status === 'pending_withdrawal'
+            console.log("Fetched data:", data);
+
+            // Filter for Approved applications
+            withdrawalRequests = data.filter(app => 
+                app.status === 'Approved'
             );
+
         } catch (err) {
-            error = "Failed to load arrangements. Please try again later.";
-            console.error("Error fetching arrangements:", err);
+            error = "Failed to load applications. Please try again later.";
+            console.error("Error fetching applications:", err);
         } finally {
             loading = false;
         }
     }
 
-    async function requestWithdrawal(arrangementId) {
+    async function requestWithdrawal(applicationId) {
         try {
-            const response = await fetch(`http://localhost:8080/request_withdrawal/${arrangementId}`, {
+            const response = await fetch(`http://localhost:5000/withdraw_application/${applicationId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    employee_id: employeeId
+                })
             });
             
             if (!response.ok) {
-                throw new Error('Failed to submit withdrawal request');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit withdrawal request');
             }
 
             const result = await response.json();
+            alert('Withdrawal request submitted successfully');
+            await fetchWithdrawalRequests(); // Refresh the list
             
-            // Update the local state to reflect the change
-            withdrawalRequests = withdrawalRequests.map(arr => 
-                arr.id === arrangementId 
-                    ? { ...arr, status: 'pending_withdrawal' }
-                    : arr
-            );
-
-            alert(result.message || 'Withdrawal request submitted successfully');
         } catch (err) {
-            alert('Error submitting withdrawal request. Please try again.');
+            alert(err.message || 'Error submitting withdrawal request. Please try again.');
             console.error("Error requesting withdrawal:", err);
         }
     }
@@ -56,16 +69,29 @@
     function formatDate(dateValue) {
         if (!dateValue) return 'N/A';
         
-        // Handle both timestamp and regular date formats
-        const date = dateValue.seconds 
-            ? new Date(dateValue.seconds * 1000)
-            : new Date(dateValue);
+        try {
+            let date;
+            if (typeof dateValue === 'object' && dateValue.seconds) {
+                date = new Date(dateValue.seconds * 1000);
+            } else if (typeof dateValue === 'string') {
+                date = new Date(dateValue);
+            } else {
+                date = new Date(dateValue);
+            }
             
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+            if (isNaN(date.getTime())) {
+                return 'Invalid Date';
+            }
+            
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (err) {
+            console.error('Error formatting date:', err);
+            return 'Invalid Date';
+        }
     }
 
     onMount(fetchWithdrawalRequests);
@@ -75,41 +101,48 @@
     <h1>Withdrawal Requests</h1>
 
     {#if loading}
-        <div class="loading">Loading arrangements...</div>
+        <div class="loading">Loading applications...</div>
     {:else if error}
         <div class="error">{error}</div>
     {:else if withdrawalRequests.length === 0}
         <div class="empty-state">
-            No arrangements available for withdrawal.
+            <h3>No Applications Available</h3>
+            <p>You have no approved applications available for withdrawal at this time.</p>
         </div>
     {:else}
-        {#each withdrawalRequests as arrangement}
+        {#each withdrawalRequests as application}
             <div class="withdrawal-card">
                 <div class="card-header">
-                    <h3>Arrangement Details</h3>
-                    <span class="status {arrangement.status}">
-                        {arrangement.status.replace('_', ' ')}
+                    <h3>Application Details</h3>
+                    <span class="status {application.status}">
+                        {application.status}
                     </span>
                 </div>
                 
                 <div class="card-body">
-                    <p><strong>Date:</strong> {formatDate(arrangement.date)}</p>
-                    <p><strong>Shift:</strong> {arrangement.shift}</p>
-                    {#if arrangement.notes}
-                        <p><strong>Notes:</strong> {arrangement.notes}</p>
+                    <p><strong>Date:</strong> {formatDate(application.date)}</p>
+                    <p><strong>Type:</strong> {application.type || 'N/A'}</p>
+                    {#if application.half_day}
+                        <p><strong>Half Day:</strong> Yes</p>
+                    {/if}
+                    {#if application.days}
+                        <p><strong>Days:</strong> {application.days}</p>
+                    {/if}
+                    {#if application.reason}
+                        <p><strong>Reason:</strong> {application.reason}</p>
                     {/if}
                 </div>
 
                 <div class="card-footer">
-                    {#if arrangement.status === 'approved'}
+                    {#if application.status === 'Approved'}
                         <button 
-                            on:click={() => requestWithdrawal(arrangement.id)}
+                            on:click={() => requestWithdrawal(application.id)}
                             class="withdrawal-button">
                             Request Withdrawal
                         </button>
-                    {:else if arrangement.status === 'pending_withdrawal'}
-                        <span class="pending-message">
-                            Withdrawal request pending
+                    {:else if application.status === 'Withdrawn'}
+                        <span class="withdrawn-message">
+                            Withdrawal request submitted
                         </span>
                     {/if}
                 </div>
@@ -119,6 +152,7 @@
 </div>
 
 <style>
+    /* Styles remain unchanged */
     .container {
         max-width: 800px;
         margin: 0 auto;
@@ -160,13 +194,13 @@
         text-transform: capitalize;
     }
 
-    .status.approved {
+    .status.Approved {
         background-color: #4CAF50;
         color: white;
     }
 
-    .status.pending_withdrawal {
-        background-color: #FFA726;
+    .status.Withdrawn {
+        background-color: #F44336;
         color: white;
     }
 
@@ -200,8 +234,8 @@
         background-color: #d32f2f;
     }
 
-    .pending-message {
-        color: #FFA726;
+    .withdrawn-message {
+        color: #F44336;
         font-weight: 500;
     }
 
@@ -217,5 +251,18 @@
     .error {
         color: #f44336;
         background: #ffebee;
+    }
+
+    .empty-state {
+        padding: 3rem 1rem;
+    }
+
+    .empty-state h3 {
+        color: #2C3E50;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: #666;
     }
 </style>

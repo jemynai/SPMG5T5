@@ -1,31 +1,25 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
     
-    // Filter states
-    let departments = ['Engineering', 'Marketing', 'HR', 'Finance', 'Sales'];
-    // Modal state
+    let departments = [];
     let showDetailModal = false;
     let selectedEmployee = null;
     let searchQuery = '';
     let selectedDepartment = '';
-    let selectedStatus='';
-    let selectedDateRange='';
-    let startDate='';
-    let endDate=''; 
-    // Data and loading states
+    let selectedStatus = '';
+    let selectedDateRange = '';
+    let startDate = '';
+    let endDate = ''; 
     let employees = [];
     let loading = true;
     let error = null;
     let isRequestInProgress = false;
 
-    // UI states
     let showFilters = true;
-    let activeTab = 'all'; // 'all', 'office', 'remote'
+    let activeTab = 'all';
 
-    // API base URL
     const API_BASE_URL = 'http://localhost:5000';
 
-    // Combined filter state
     $: filterState = {
         department: selectedDepartment,
         status: selectedStatus,
@@ -35,7 +29,6 @@
         endDate
     };
 
-    // Derived employee lists
     $: filteredEmployees = employees;
     $: officeEmployees = filteredEmployees.filter(emp => emp.status === 'office');
     $: remoteEmployees = filteredEmployees.filter(emp => emp.status === 'remote');
@@ -43,11 +36,8 @@
     $: officePercentage = totalEmployees ? (officeEmployees.length / totalEmployees * 100).toFixed(1) : 0;
     $: remotePercentage = totalEmployees ? (remoteEmployees.length / totalEmployees * 100).toFixed(1) : 0;
 
-    // Fetch employees with improved error handling
     async function fetchEmployees(filters = {}) {
         if (isRequestInProgress) return;
-
-
         
         try {
             isRequestInProgress = true;
@@ -60,13 +50,11 @@
                 }
             }, 150);
 
-            // Build query parameters
             const params = new URLSearchParams();
             if (filters.department !== 'All') params.append('department', filters.department);
             if (filters.status !== 'All') params.append('status', filters.status.toLowerCase());
             if (filters.search) params.append('search', filters.search);
 
-            // Fetch data from backend
             const response = await fetch(`${API_BASE_URL}/employees?${params.toString()}`);
 
             if (!response.ok) {
@@ -95,8 +83,6 @@
         }
     }
 
-
-    // Update employee status
     async function updateEmployeeStatus(employeeId, newStatus) {
         try {
             const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/status`, {
@@ -107,41 +93,23 @@
                 body: JSON.stringify({ status: newStatus })
             });
 
-
-
-
-
-
-
-
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to update status');
             }
 
-            // Reload data with current filters
             await fetchEmployees(filterState);
         } catch (error) {
             console.error('Error updating employee status:', error);
-
-
-
-
         }
     }
 
-    // Fetch employee schedule
     async function fetchEmployeeSchedule(employeeId) {
         try {
             const params = new URLSearchParams();
             if (selectedDateRange === 'custom') {
                 params.append('start_date', startDate);
                 params.append('end_date', endDate);
-
-
-
-
             }
 
             const response = await fetch(
@@ -161,20 +129,13 @@
         }
     }
 
-    // Helper functions
-
-
-
-
     function getStatusColor(status) {
         return status === 'office' ? 'bg-green-100' : 'bg-blue-100';
     }
 
     function getEmployeeInitials(name) {
-        return name.split(' ')
-            .map(part => part[0])
-            .join('')
-            .toUpperCase();
+        const [firstName = '', lastName = ''] = name.split(' ');
+        return (firstName[0] || '') + (lastName[0] || '');
     }
 
     function toggleFilters() {
@@ -185,8 +146,7 @@
         selectedEmployee = employee;
         showDetailModal = true;
         
-        // Fetch and update schedule
-        const schedules = await fetchEmployeeSchedule(employee.id);
+        const schedules = await fetchEmployeeSchedule(employee.userID);
         selectedEmployee = {
             ...selectedEmployee,
             scheduleHistory: schedules
@@ -198,7 +158,6 @@
         selectedEmployee = null;
     }
 
-    // Debounced filter function
     let filterTimeout;
     function debouncedFetchEmployees(filters) {
         clearTimeout(filterTimeout);
@@ -209,17 +168,26 @@
         }, 300);
     }
 
-    // Initialize data
-    onMount(() => {
+    onMount(async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/departments`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch departments');
+            }
+            const data = await response.json();
+            departments = data.departments;
+        } catch (err) {
+            console.error('Error fetching departments:', err);
+            departments = [];
+        }
+        
         fetchEmployees(filterState);
     });
 
-    // Cleanup on component destruction
     onDestroy(() => {
         clearTimeout(filterTimeout);
     });
 
-    // Reactive statement for filter changes
     $: {
         debouncedFetchEmployees(filterState);
     }
