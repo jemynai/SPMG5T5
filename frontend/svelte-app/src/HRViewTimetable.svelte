@@ -6,7 +6,7 @@
     let selectedEmployee = null;
     let searchQuery = '';
     let selectedDepartment = '';
-    let selectedStatus = '';
+    let selectedStatus = 'All';
     let selectedDateRange = '';
     let startDate = '';
     let endDate = ''; 
@@ -256,20 +256,14 @@
                         </div>
                         <!-- Work Status Filter -->
                         <div class="filter-item">
-                            <label for="status-filter">Work Status</label>
-                            <select id="status-filter" bind:value={selectedStatus}>
-                                <option value="All">All Statuses</option>
-                                <option value="office">In Office</option>
-                                <option value="remote">Remote</option>
-                            </select>
-                        </div>
-
-
-
-
-
-
-                        <!-- Date Range -->
+    <label for="status-filter">Work Status</label>
+    <select id="status-filter" bind:value={selectedStatus}>
+        <option value="All">All Statuses</option>
+        <option value="office">In Office</option>
+        <option value="remote">Remote</option>
+    </select>
+</div>
+                     <!-- Date Range -->
                         <div class="filter-item">
                             <label for="date-range-filter">Date Range</label>
                             <select id="date-range-filter" bind:value={selectedDateRange}>
