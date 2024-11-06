@@ -9,13 +9,14 @@ db = Firebase().get_db()
 # Create blueprint
 mngr_view_bp = Blueprint('mngr_view', __name__)
 
+# Update CORS to match your Svelte dev server port
 ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite's default port
     "http://localhost:8080",
     "http://localhost:3000",
-    "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:3000"
 ]
 
 CORS(mngr_view_bp, resources={
@@ -38,6 +39,7 @@ def format_date(date_obj: datetime) -> str:
     return str(date_obj)
 
 def normalize_status(status: str) -> str:
+    """Normalize status to match frontend expectations"""
     if not status:
         return ""
     
@@ -52,99 +54,118 @@ def normalize_status(status: str) -> str:
     }
     return status_map.get(status.upper(), status.lower())
 
-def create_response(data: Dict = None, error: str = None, status_code: int = 200) -> Tuple:
-    response = {
-        "success": error is None,
-        "timestamp": datetime.now(timezone.utc).isoformat()
-    }
-    
-    if error:
-        response["error"] = error
-    elif data:
-        if "arrangements" in data:
-            response.update(data)
-        else:
-            response["data"] = data
-        
-    return jsonify(response), status_code
-
 def format_arrangement(arr: Arrangement) -> Dict:
+    """Format arrangement to match frontend expectations"""
     try:
         arr_dict = arr.to_dict()
+        
+        # Ensure consistent status values
+        status = normalize_status(arr_dict.get('status', 'office'))
+        
+        # Format the arrangement to match frontend structure
         return {
             "id": str(arr_dict.get('id', '')),
             "employee_id": str(arr_dict.get('employee_id', '')),
             "department_id": str(arr_dict.get('department_id', '')),
-            "status": normalize_status(arr_dict.get('status', '')),
-            "date": format_date(arr_dict.get('date')),
-            "details": arr_dict.get('details', {}),
+            "status": status,
+            "details": {
+                "location": arr_dict.get('location', 'N/A'),
+                "description": arr_dict.get('description', '')
+            },
             "created_at": format_date(arr_dict.get('created_at')),
             "updated_at": format_date(arr_dict.get('updated_at'))
         }
     except Exception as e:
         raise ValueError(f"Error formatting arrangement: {str(e)}")
 
+def calculate_summary(arrangements: list) -> Dict:
+    """Calculate summary statistics for arrangements"""
+    total_count = len(arrangements)
+    office_count = sum(1 for arr in arrangements if arr['status'] == 'office')
+    home_count = sum(1 for arr in arrangements if arr['status'] == 'home')
+    
+    return {
+        "total": total_count,
+        "status_distribution": {
+            "office": {
+                "count": office_count,
+                "percentage": round((office_count / total_count * 100), 1) if total_count > 0 else 0
+            },
+            "home": {
+                "count": home_count,
+                "percentage": round((home_count / total_count * 100), 1) if total_count > 0 else 0
+            }
+        }
+    }
+
 @mngr_view_bp.route('/mngr_view_ttbl', methods=['GET'])
 def mngr_view_ttbl():
     try:
+        # Get query parameters
         department_id = request.args.get('department_id', '').strip()
         status_filter = request.args.get('status', '').strip()
-        
-        if not department_id:
-            return create_response(error="Department ID is required", status_code=400)
 
+        if not department_id:
+            return jsonify({
+                "success": False,
+                "error": "Department ID is required",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }), 400
+
+        # Normalize status filter
         if status_filter:
             status_filter = normalize_status(status_filter)
 
+        # Get arrangements
         arrangements = timetable_service.get_department_arrangements(
             department_id=department_id,
             status_filter=status_filter
         )
 
-        arrangements_data = [format_arrangement(arr) for arr in arrangements]
+        # Format arrangements
+        formatted_arrangements = [format_arrangement(arr) for arr in arrangements]
         
-        total_count = len(arrangements_data)
-        status_counts = {
-            'office': sum(1 for arr in arrangements_data if arr['status'] == 'office'),
-            'home': sum(1 for arr in arrangements_data if arr['status'] == 'home')
-        }
+        # Calculate summary
+        summary = calculate_summary(formatted_arrangements)
 
+        # Prepare response
         response_data = {
-            "arrangements": arrangements_data,
-            "summary": {
-                "total": total_count,
-                "status_distribution": {
-                    "office": {
-                        "count": status_counts['office'],
-                        "percentage": round((status_counts['office'] / total_count * 100), 1) if total_count > 0 else 0
-                    },
-                    "home": {
-                        "count": status_counts['home'],
-                        "percentage": round((status_counts['home'] / total_count * 100), 1) if total_count > 0 else 0
-                    }
-                }
-            },
-            "metadata": {
-                "department_id": department_id,
-                "status_filter": status_filter or "all",
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            }
+            "success": True,
+            "arrangements": formatted_arrangements,
+            "summary": summary,
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-        return create_response(response_data)
+        return jsonify(response_data), 200
 
     except ValueError as e:
-        return create_response(error=str(e), status_code=400)
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), 400
     except Exception as e:
-        return create_response(error=f"An unexpected error occurred: {str(e)}", status_code=500)
+        return jsonify({
+            "success": False,
+            "error": f"An unexpected error occurred: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), 500
 
 @mngr_view_bp.errorhandler(404)
 def not_found_error(error):
-    return create_response(error="Resource not found", status_code=404)
+    return jsonify({
+        "success": False,
+        "error": "Resource not found",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 404
 
 @mngr_view_bp.errorhandler(500)
 def internal_error(error):
-    return create_response(error="Internal server error", status_code=500)
+    return jsonify({
+        "success": False,
+        "error": "Internal server error",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 500
 
 @mngr_view_bp.after_request
 def after_request(response):

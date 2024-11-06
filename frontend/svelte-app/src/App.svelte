@@ -122,6 +122,12 @@
         >
             Cancel Request
         </button>
+        <button 
+        on:click={() => navigateTo('/manager-timetable')}
+        class:active={$currentRoute === '/manager-timetable'}
+    >
+        ManagerTimetable 
+    </button>
     </nav>
 </main>
 
