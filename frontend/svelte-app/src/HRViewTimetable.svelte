@@ -252,14 +252,8 @@
                                 {#each departments as dept}
                                     <option value={dept}>{dept}</option>
                                 {/each}
-                            </select>
+                            </select>                            
                         </div>
-
-
-
-
-
-
                         <!-- Work Status Filter -->
                         <div class="filter-item">
                             <label for="status-filter">Work Status</label>
