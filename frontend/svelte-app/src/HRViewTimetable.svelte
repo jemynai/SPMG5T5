@@ -3,17 +3,15 @@
     
     // Filter states
     let departments = ['Engineering', 'Marketing', 'HR', 'Finance', 'Sales'];
-    let selectedDepartment = 'All';
-    let searchQuery = '';
-    let selectedStatus = 'All';
-    let selectedDateRange = 'today';
-    let startDate = new Date().toISOString().split('T')[0];
-    let endDate = new Date().toISOString().split('T')[0];
-    
     // Modal state
     let showDetailModal = false;
     let selectedEmployee = null;
-    
+    let searchQuery = '';
+    let selectedDepartment = '';
+    let selectedStatus='';
+    let selectedDateRange='';
+    let startDate='';
+    let endDate=''; 
     // Data and loading states
     let employees = [];
     let loading = true;
@@ -48,6 +46,8 @@
     // Fetch employees with improved error handling
     async function fetchEmployees(filters = {}) {
         if (isRequestInProgress) return;
+
+
         
         try {
             isRequestInProgress = true;
@@ -95,6 +95,7 @@
         }
     }
 
+
     // Update employee status
     async function updateEmployeeStatus(employeeId, newStatus) {
         try {
@@ -106,6 +107,14 @@
                 body: JSON.stringify({ status: newStatus })
             });
 
+
+
+
+
+
+
+
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to update status');
@@ -115,6 +124,10 @@
             await fetchEmployees(filterState);
         } catch (error) {
             console.error('Error updating employee status:', error);
+
+
+
+
         }
     }
 
@@ -125,6 +138,10 @@
             if (selectedDateRange === 'custom') {
                 params.append('start_date', startDate);
                 params.append('end_date', endDate);
+
+
+
+
             }
 
             const response = await fetch(
@@ -145,6 +162,10 @@
     }
 
     // Helper functions
+
+
+
+
     function getStatusColor(status) {
         return status === 'office' ? 'bg-green-100' : 'bg-blue-100';
     }
@@ -246,12 +267,14 @@
                                     type="text"
                                     bind:value={searchQuery}
                                     placeholder="Name or department..."
+
                                 />
                                 <svg class="icon" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
                         </div>
+
 
                         <!-- Department Filter -->
                         <div class="filter-item">
@@ -264,6 +287,11 @@
                             </select>
                         </div>
 
+
+
+
+
+
                         <!-- Work Status Filter -->
                         <div class="filter-item">
                             <label for="status-filter">Work Status</label>
@@ -273,6 +301,11 @@
                                 <option value="remote">Remote</option>
                             </select>
                         </div>
+
+
+
+
+
 
                         <!-- Date Range -->
                         <div class="filter-item">
@@ -295,6 +328,12 @@
                                 </div>
                             {/if}
                         </div>
+
+
+
+
+
+
                     </div>
                 </div>
             {/if}
@@ -311,7 +350,9 @@
                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
+
                 </div>
+
 
                 <div class="stat-card">
                     <div>
@@ -323,6 +364,22 @@
                         <svg viewBox="0 0 24 24">
                             <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     </div>
                 </div>
 
@@ -336,9 +393,24 @@
                         <svg viewBox="0 0 24 24">
                             <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     </div>
                 </div>
             </div>
+
 
             <!-- Tab Navigation -->
             <div class="tabs">
@@ -487,11 +559,7 @@
                                 class="primary"
                                 on:click={() => updateEmployeeStatus(
                                     selectedEmployee.id,
-                                    selectedEmployee.status === 'office' ? 'remote' : 'office'
-                                )}
-                            >
-                                Toggle Status
-                            </button>
+                                    selectedEmployee.status === 'office' ? 'remote' : 'office')}>
                         </div>
                     </div>
                 </div>

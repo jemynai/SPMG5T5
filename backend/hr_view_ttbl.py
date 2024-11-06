@@ -1,9 +1,11 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import CORS
 from services.firebase import Firebase
 from datetime import datetime
 
 # Create Blueprint
 hr_view_bp = Blueprint('hr_view_ttbl', __name__)
+CORS(hr_view_bp)
 
 # Initialize Firestore DB
 db = Firebase().get_db()
