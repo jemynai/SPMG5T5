@@ -17,10 +17,13 @@ class AuthController(Controller):
 
     def login(self):
         data = request.json
+        print(f"attempting to log in with {data['email']}")
         response = self.auth_service.authenticate(data['email'], data['password'])
         if response:
+            print(f"Successfully logged in with {data['email']}, giving repsonse {response}")
             return jsonify(response), 200
         else:
+            print(f"Failed to logged in with {data['email']}")
             return jsonify({'message': 'Login Failed'}), 401
 
     @JwtRequestFilter().token_required(roles=['hr'])
