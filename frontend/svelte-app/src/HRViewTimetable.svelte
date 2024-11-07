@@ -5,9 +5,9 @@
     let showDetailModal = false;
     let selectedEmployee = null;
     let searchQuery = '';
-    let selectedDepartment = '';
+    let selectedDepartment = 'All';  // Set default values
     let selectedStatus = 'All';
-    let selectedDateRange = '';
+    let selectedDateRange = 'today';  // Set default values
     let startDate = '';
     let endDate = ''; 
     let employees = [];
@@ -20,15 +20,18 @@
 
     const API_BASE_URL = 'http://localhost:5000';
 
-    $: filterState = {
-        department: selectedDepartment,
-        status: selectedStatus,
-        search: searchQuery,
-        dateRange: selectedDateRange,
-        startDate,
-        endDate
-    };
+    function getFilterState() {
+        return {
+            department: selectedDepartment,
+            status: selectedStatus,
+            search: searchQuery,
+            dateRange: selectedDateRange,
+            startDate,
+            endDate
+        };
+    }
 
+    // Move the filtering logic to computed properties
     $: filteredEmployees = employees;
     $: officeEmployees = filteredEmployees.filter(emp => emp.status === 'office');
     $: remoteEmployees = filteredEmployees.filter(emp => emp.status === 'remote');
@@ -41,19 +44,18 @@
         
         try {
             isRequestInProgress = true;
-            const loadingDelay = 300;
-            const startTime = Date.now();
-            
-            const loadingTimeout = setTimeout(() => {
-                if (isRequestInProgress) {
-                    loading = true;
-                }
-            }, 150);
+            loading = true;  // Set loading immediately
 
             const params = new URLSearchParams();
-            if (filters.department !== 'All') params.append('department', filters.department);
-            if (filters.status !== 'All') params.append('status', filters.status.toLowerCase());
-            if (filters.search) params.append('search', filters.search);
+            if (filters.department && filters.department !== 'All') {
+                params.append('department', filters.department);
+            }
+            if (filters.status && filters.status !== 'All') {
+                params.append('status', filters.status.toLowerCase());
+            }
+            if (filters.search) {
+                params.append('search', filters.search);
+            }
 
             const response = await fetch(`${API_BASE_URL}/employees?${params.toString()}`);
 
@@ -64,13 +66,6 @@
 
             const data = await response.json();
             employees = data.employees;
-            
-            const elapsedTime = Date.now() - startTime;
-            if (elapsedTime < loadingDelay) {
-                await new Promise(resolve => setTimeout(resolve, loadingDelay - elapsedTime));
-            }
-            
-            clearTimeout(loadingTimeout);
             error = null;
             
         } catch (err) {
@@ -83,48 +78,48 @@
         }
     }
 
-    function getEmployeeInitials(name) {
-        const [firstName = '', lastName = ''] = name.split(' ');
-        return (firstName[0] || '') + (lastName[0] || '');
-    }
-
     function toggleFilters() {
         showFilters = !showFilters;
     }
 
     let filterTimeout;
-    function debouncedFetchEmployees(filters) {
+    function debouncedFetchEmployees() {
         clearTimeout(filterTimeout);
         filterTimeout = setTimeout(() => {
-            if (!loading) {
-                fetchEmployees(filters);
+            if (!isRequestInProgress) {
+                fetchEmployees(getFilterState());
             }
-        }, 300);
+        }, 500);  // Increased debounce time to 500ms
     }
+
+    // Handle individual filter changes
+    $: if (searchQuery !== undefined) debouncedFetchEmployees();
+    $: if (selectedDepartment !== undefined) debouncedFetchEmployees();
+    $: if (selectedStatus !== undefined) debouncedFetchEmployees();
+    $: if (selectedDateRange !== undefined) debouncedFetchEmployees();
 
     onMount(async () => {
         try {
+            // Fetch departments first
             const response = await fetch(`${API_BASE_URL}/departments`);
             if (!response.ok) {
                 throw new Error('Failed to fetch departments');
             }
             const data = await response.json();
             departments = data.departments;
+
+            // Then fetch employees
+            await fetchEmployees(getFilterState());
         } catch (err) {
-            console.error('Error fetching departments:', err);
+            console.error('Error in initialization:', err);
             departments = [];
+            error = err.message;
         }
-        
-        fetchEmployees(filterState);
     });
 
     onDestroy(() => {
         clearTimeout(filterTimeout);
     });
-
-    $: {
-        debouncedFetchEmployees(filterState);
-    }
 </script>
 <main class="dashboard">
     <div class="container">
