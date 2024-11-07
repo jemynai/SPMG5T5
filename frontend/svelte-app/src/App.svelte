@@ -3,7 +3,6 @@
 
     // Import components
     import ApplyModal from "./Apply.svelte";
-    import Arrangements from "./Arrangements.svelte";
     import WithdrawalRequest from "./WithdrawalRequest.svelte";
     import HRViewTimetable from './HRViewTimetable.svelte';
     import ManagerTimetable from './ManagerTimetable.svelte';
@@ -12,6 +11,7 @@
 
     import { jwtToken, userClaims } from './authStore';
     import Login from './Login.svelte';
+    import Apply from './Apply.svelte';
 
     let isLoggedIn = $jwtToken !== '';
     $: isLoggedIn = $jwtToken !== '';
@@ -23,7 +23,7 @@
     const lastName = $userClaims.last_name;
 
     // Create stores for route management
-    const currentRoute = writable('/arrangements');
+    const currentRoute = writable('/apply');
     const isRouteTransitioning = writable(false);
 
     // Modal state
@@ -55,13 +55,7 @@
 {#if isLoggedIn}
 <main>
     <nav class="top-nav">
-        <button 
-            class="nav-link" 
-            on:click={() => navigateTo('/arrangements')}
-            class:active={$currentRoute === '/arrangements'}
-        >
-            Arrangements
-        </button>
+        
         <button 
             class="nav-link" 
             on:click={() => navigateTo('/withdrawal-request')}
@@ -79,9 +73,7 @@
     </nav>
 
     <div class="content" class:transitioning={$isRouteTransitioning}>
-        {#if $currentRoute === '/arrangements'}
-            <Arrangements />
-        {:else if $currentRoute === '/withdrawal-request'}
+        {#if $currentRoute === '/withdrawal-request'}
             <WithdrawalRequest />
         {:else if $currentRoute === '/apply'}
             <ApplyModal />
@@ -110,12 +102,7 @@
         >
             View Own Schedule
         </button>
-        <button 
-            on:click={() => navigateTo('/arrangements')}
-            class:active={$currentRoute === '/arrangements'}
-        >
-            Arrangements
-        </button>
+    
         <button 
             on:click={() => navigateTo('/withdrawal-request')}
             class:active={$currentRoute === '/withdrawal-request'}
