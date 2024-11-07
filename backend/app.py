@@ -8,7 +8,7 @@ from employee_view_own_ttbl import employee_view_own_bp
 from controllers.auth_controller import AuthController
 from controllers.employee_controller import EmployeeController
 from employee_view_team_ttbl import employee_view_team_bp
-from apply import apply_bp 
+from arrangements import apply_bp 
 from flask_cors import CORS
 from CancelRequest import pending_request_bp
 from Appr_Rej import Appr_Rej_bp
