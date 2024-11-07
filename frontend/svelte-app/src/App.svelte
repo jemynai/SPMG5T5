@@ -9,7 +9,7 @@
     import EmployeeTimetable from './EmployeeTimetable.svelte';
     import CancelRequest from './CancelRequest.svelte';
 
-    import { jwtToken, userClaims } from './authstore';
+    import { jwtToken, userClaims } from './authstore.js';
     import Login from './Login.svelte';
 
     let isLoggedIn = $jwtToken !== '';
