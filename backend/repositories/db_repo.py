@@ -9,7 +9,12 @@ class DbRepository:
 
     def get_by_field(self, field, value):
         query = self.collection.where(field, "==", value).get()
-        return [doc.to_dict() for doc in query] if query else None
+        results = []
+        for doc in query:
+            doc_dict = doc.to_dict()
+            doc_dict["user_id"] = doc.id
+            results.append(doc_dict)
+        return results if query else None
 
     def add_document(self, data, doc_id=None):
         if doc_id:
