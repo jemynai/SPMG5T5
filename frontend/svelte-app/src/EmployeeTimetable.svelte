@@ -86,7 +86,7 @@
 </script>
 
 <main>
-	<h1>My Work From Home Arrangements</h1>
+	<h1>Your Timetable</h1>
 	<div class="current-view-container">
 		<div class="current-view-box {current_view === 'self' ? 'active' : ''}" on:click={() => updateView('self')}>Self</div>
 		<div class="current-view-box {current_view === 'team' ? 'active' : ''}" on:click={() => updateView('team')}>Team</div>
@@ -125,10 +125,8 @@
 	}
 
 	h1 {
-		color: #ff3e00;
-		text-transform: uppercase;
-		font-size: 4em;
-		font-weight: 100;
+		text-align: start;
+		font-weight: bold;
 	}
 
 	@media (min-width: 640px) {

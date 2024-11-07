@@ -22,7 +22,7 @@
     const lastName = $userClaims.last_name;
 
     // Create stores for route management
-    const currentRoute = writable('/apply');
+    const currentRoute = writable('/');
     const isRouteTransitioning = writable(false);
 
     // Modal state
@@ -96,8 +96,8 @@
     <!-- Navigation Buttons -->
     <nav class="function-nav">
         <button 
-            on:click={() => navigateTo('/view-own-schedule')}
-            class:active={$currentRoute === '/view-own-schedule'}
+            on:click={() => navigateTo('/employee-timetable')}
+            class:active={$currentRoute === '/employee-timetable'}
         >
             View Own Schedule
         </button>
