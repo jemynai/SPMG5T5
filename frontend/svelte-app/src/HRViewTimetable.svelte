@@ -181,16 +181,6 @@
                                 {/each}
                             </select>
                         </div>
-
-                        <div class="filter-item">
-                            <label for="status-filter">Work Status</label>
-                            <select id="status-filter" bind:value={selectedStatus}>
-                                <option value="All">All Statuses</option>
-                                <option value="office">In Office</option>
-                                <option value="remote">Remote</option>
-                            </select>
-                        </div>
-
                         <div class="filter-item">
                             <label for="date-range-filter">Date Range</label>
                             <select id="date-range-filter" bind:value={selectedDateRange}>

@@ -36,22 +36,18 @@ def get_employees():
         status = request.args.get('status')
         search = request.args.get('search')
 
-        # Apply department filter if specified
         if department and department != 'All':
             query = query.where('dept', '==', department)
-            
-        # Apply status filter if specified and not 'All'
-        if status and status.lower() != 'all':
+        if status and status != 'All':
             query = query.where('status', '==', status.lower())
 
-        # Execute query
         docs = query.stream()
         
         employees = []
         for doc in docs:
             raw_data = doc.to_dict()
             
-            # Get user ID from document
+            # Use document ID as the userID if not explicitly set
             user_id = doc.id
             
             # Construct full name
@@ -61,13 +57,13 @@ def get_employees():
             if not full_name:
                 full_name = 'Unknown'
 
-            # Transform raw data into employee object
+            # Transform data with your specific fields
             employee_data = {
                 'id': user_id,
                 'name': full_name,
                 'department': raw_data.get('dept', 'Unassigned'),
                 'team': raw_data.get('position', 'Unassigned'),
-                'status': raw_data.get('status', 'office').lower(),  # Ensure status is lowercase
+                'status': raw_data.get('status', 'office'),
                 'manager': raw_data.get('rpt_manager', 'Unassigned'),
                 'email': raw_data.get('email', ''),
                 'country': raw_data.get('country', 'Unassigned'),
@@ -75,18 +71,18 @@ def get_employees():
                 'position': raw_data.get('position', 'Unassigned')
             }
             
-            # Apply search filter if specified
+            # Apply search filter if exists
             if search:
                 search_term = search.lower()
                 search_fields = [
                     str(employee_data['id']),
-                    employee_data['name'].lower(),
-                    employee_data['department'].lower(),
-                    employee_data['position'].lower(),
-                    employee_data['email'].lower(),
-                    employee_data['country'].lower()
+                    employee_data['name'],
+                    employee_data['department'],
+                    employee_data['position'],
+                    employee_data['email'],
+                    employee_data['country']
                 ]
-                if not any(search_term in field for field in search_fields):
+                if not any(search_term in str(field).lower() for field in search_fields if field):
                     continue
             
             employees.append(employee_data)
@@ -108,7 +104,7 @@ def update_status(employee_id):
         if new_status not in ['office', 'remote']:
             return jsonify({"error": "Invalid status value"}), 400
 
-        # Get employee document
+        # Update directly using the employee_id as document ID
         employee_ref = db.collection('users').document(employee_id)
         employee_doc = employee_ref.get()
         
@@ -117,18 +113,18 @@ def update_status(employee_id):
 
         employee_data = employee_doc.to_dict()
 
-        # Update employee status
+        # Update status
         employee_ref.update({
-            'status': new_status.lower(),  # Ensure status is lowercase
+            'status': new_status,
             'lastUpdated': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         })
         
         # Add to schedule history
         schedule_ref = db.collection('schedules').document()
         schedule_ref.set({
-            'employee_id': employee_id,
+            'employee_id': employee_id,  # Use document ID consistently
             'date': datetime.now().strftime('%Y-%m-%d'),
-            'status': new_status.lower(),  # Ensure status is lowercase
+            'status': new_status,
             'hours': '9:00-17:00',
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'first_name': employee_data.get('first_name', ''),
@@ -144,18 +140,18 @@ def update_status(employee_id):
 @hr_view_bp.route('/employee/<employee_id>/schedule', methods=['GET'])
 def get_schedule(employee_id):
     try:
-        # Verify employee exists
+        # Get the employee document directly using employee_id
         employee_ref = db.collection('users').document(employee_id)
         employee_doc = employee_ref.get()
         
         if not employee_doc.exists:
             return jsonify({"error": "Employee not found"}), 404
 
-        # Get date range parameters
+        # Get date parameters
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
 
-        # Build schedule query
+        # Query schedule collection using employee_id
         query = db.collection('schedules').where('employee_id', '==', employee_id)
         
         if start_date:
@@ -163,18 +159,16 @@ def get_schedule(employee_id):
         if end_date:
             query = query.where('date', '<=', end_date)
 
-        # Get and sort schedule documents
         query = query.order_by('date', direction='DESCENDING')
         schedule_docs = query.stream()
         
-        # Transform schedule documents
         schedules = []
         for doc in schedule_docs:
             schedule_data = doc.to_dict()
             schedules.append({
                 'date': schedule_data.get('date'),
                 'hours': schedule_data.get('hours', '9:00-17:00'),
-                'status': schedule_data.get('status', 'office').lower(),  # Ensure status is lowercase
+                'status': schedule_data.get('status', 'office'),
                 'department': schedule_data.get('department', 'Unassigned')
             })
 
