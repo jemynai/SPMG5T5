@@ -59,7 +59,8 @@ export default {
 			browser: true,
 			dedupe: ['svelte'],
 			exportConditions: ['svelte'],
-			extensions: ['.js', '.svelte']
+			extensions: ['.js', '.svelte'],
+			mainFields: ['module', 'main']
 		}),
 		commonjs(),
 
