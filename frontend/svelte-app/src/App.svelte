@@ -7,7 +7,7 @@
     import WithdrawalRequest from "./WithdrawalRequest.svelte";
     import HRViewTimetable from './HRViewTimetable.svelte';
     import ManagerTimetable from './ManagerTimetable.svelte';
-    import ViewOwnSchedule from './ViewOwnSchedule.svelte';
+    import EmployeeTimetable from './EmployeeTimetable.svelte';
     import CancelRequest from './CancelRequest.svelte';
     import Appr_Rej from './Appr_Rej.svelte';
 
@@ -86,8 +86,8 @@
             <WithdrawalRequest />
         {:else if $currentRoute === '/apply'}
             <ApplyModal />
-        {:else if $currentRoute === '/view-own-schedule'}
-            <ViewOwnSchedule />
+        {:else if $currentRoute === '/employee-timetable'}
+            <EmployeeTimetable />
         {:else if $currentRoute === '/hr-view-timetable'}
             <HRViewTimetable />
         {:else if $currentRoute === '/manager-timetable'}

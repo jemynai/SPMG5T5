@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte'; 
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
+	import config from './config.json';
+
 	// event-calendar code
 	let current_user = '130002';
 	let current_view = 'self';
@@ -29,41 +31,15 @@
 	let arrangementsArray = [];
 
 	async function fetchArrangements() {
-		if (current_view == 'self') {
-			try {
-				const response = await fetch(`http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`);
-				if (!response.ok) {
-					throw new Error('Failed to fetch data');
-				}
-			const data = await response.json();
+		const endpoint = current_view === 'self' 
+			? `${config.base_url}/employee_view_own_ttbl?eid=${current_user}`
+			: `${config.base_url}/employee_view_team_ttbl?eid=${current_user}`;
 
-			// Reset arrays before pushing new data
-			arrangementsArray = [];
-			options.events = [];
-
-			arrangementsArray.push(...data.arrangements);
-			for (let a of arrangementsArray) {
-				let arrangementDate = new Date(Date.parse(a.date));
-				options.events.push({
-					title: a.employee_id + ": " + a.shift.toUpperCase() + " WFH",
-					start: arrangementDate,
-					end: arrangementDate,
-					allDay: true,
-				});
+		try {
+			const response = await fetch(endpoint);
+			if (!response.ok) {
+				throw new Error('Failed to fetch data');
 			}
-				arrangementsArray = [...arrangementsArray];
-				options.events = [...options.events];
-				arrangementsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			}
-		}
-		else {
-			try {
-				const response = await fetch(`http://localhost:8000/employee_view_team_ttbl?eid=${current_user}`);
-				if (!response.ok) {
-					throw new Error('Failed to fetch data');
-				}
 			const data = await response.json();
 
 			// Reset arrays before pushing new data
@@ -80,12 +56,11 @@
 					allDay: true
 				});
 			}
-				arrangementsArray = [...arrangementsArray];
-				options.events = [...options.events];
-				arrangementsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
-			} catch (error) {
-				console.error('Error fetching data:', error);
-			}
+			arrangementsArray = [...arrangementsArray];
+			arrangementsArray.sort((a, b) => new Date(a.date) - new Date(b.date));
+			options.events = [...options.events];
+		} catch (error) {
+			console.error('Error fetching data:', error);
 		}
 	}
 
