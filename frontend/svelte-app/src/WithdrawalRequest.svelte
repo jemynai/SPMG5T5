@@ -1,5 +1,6 @@
 <script>
     import { onMount } from "svelte";
+    import config from './config.json';
     let withdrawalRequests = [];
     let loading = false;
     let error = null;
@@ -11,7 +12,7 @@
         loading = true;
         error = null;
         try {
-            const response = await fetch(`http://localhost:5000/get_user_applications?eid=${employeeId}`, {
+            const response = await fetch(`${config.base_url}/get_user_applications?eid=${employeeId}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -41,7 +42,7 @@
 
     async function requestWithdrawal(applicationId) {
         try {
-            const response = await fetch(`http://localhost:5000/withdraw_application/${applicationId}`, {
+            const response = await fetch(`${config.base_url}/withdraw_application/${applicationId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

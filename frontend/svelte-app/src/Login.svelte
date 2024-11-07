@@ -1,6 +1,6 @@
 <script>
   import {createEventDispatcher} from 'svelte';
-
+  import config from './config.json';
   import { jwtToken } from './authStore';
 
   const dispatch = createEventDispatcher();
@@ -9,7 +9,7 @@
 
   const loginUser = async () => {
     try {
-      const response = await fetch('http://localhost:5000/login', {
+      const response = await fetch(`${config.base_url}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -17,7 +17,7 @@
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
-      return data.token;
+      return data;
     } catch (error) {
       console.error('Error logging in:', error);
       return null;
@@ -35,27 +35,35 @@
   };
 </script>
 
-<div class="page-container">
-  <div class="form-container">
-    <form on:submit={handleSubmit}>
-      <h1>Log in</h1>
-      <label class="text-field">
-        Email:
-        <input type="email" bind:value={email} placeholder="Input your email" required />
-      </label>
-      <label class="text-field">
-        Password:
-        <input type="password" bind:value={password} placeholder="Input your password" required />
-      </label>
-      <button type="submit">Log in</button>
-    </form>
-    <div class="form-splash"></div>
+<div class="hide-overflow">
+  <div class="page-container">
+    <div class="form-container">
+      <form on:submit={handleSubmit}>
+        <h1>Log in</h1>
+        <label class="text-field">
+          Email:
+          <input type="email" bind:value={email} placeholder="Input your email" required />
+        </label>
+        <label class="text-field">
+          Password:
+          <input type="password" bind:value={password} placeholder="Input your password" required />
+        </label>
+        <button type="submit">Log in</button>
+      </form>
+      <div class="form-splash"></div>
+    </div>
   </div>
 </div>
 
 <style>
-  :global(body) {
+  .hide-overflow {
     overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
   }
   .page-container {
     display: flex;

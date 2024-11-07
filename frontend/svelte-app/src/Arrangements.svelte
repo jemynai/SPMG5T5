@@ -1,10 +1,11 @@
 <script>
   import { onMount } from "svelte";
+  import config from './config.json';
   let arrangements = [];
 
   async function fetchArrangements() {
       try {
-          const response = await fetch("http://localhost:8080/get_arrangements?eid=YOUR_EMPLOYEE_ID");
+          const response = await fetch(`${config.base_url}/get_arrangements?eid=YOUR_EMPLOYEE_ID`);
           const data = await response.json();
           arrangements = data.arrangements;
       } catch (err) {
@@ -14,7 +15,7 @@
 
   async function requestWithdrawal(arrangementId) {
       try {
-          const response = await fetch(`http://localhost:8080/request_withdrawal/${arrangementId}`, {
+          const response = await fetch(`${config.base_url}/request_withdrawal/${arrangementId}`, {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',

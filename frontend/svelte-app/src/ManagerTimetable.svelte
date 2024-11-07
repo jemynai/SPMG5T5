@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  
+  import config from './config.json';
   let departmentId = '';
   let searchQuery = '';
   let selectedStatus = 'All';
@@ -41,7 +41,7 @@
     hasSearched = true;
 
     try {
-      let url = `http://localhost:8080/mngr_view_ttbl?department_id=${encodeURIComponent(departmentId)}`;
+      let url = `${config.base_url}/mngr_view_ttbl?department_id=${encodeURIComponent(departmentId)}`;
       if (selectedStatus !== 'All') {
         url += `&status=${encodeURIComponent(selectedStatus.toLowerCase())}`;
       }

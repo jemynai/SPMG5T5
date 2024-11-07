@@ -1,5 +1,6 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
+    import config from './config.json';
     
     let departments = [];
     let showDetailModal = false;
@@ -18,7 +19,7 @@
     let showFilters = true;
     let activeTab = 'all';
 
-    const API_BASE_URL = 'http://localhost:5000';
+    const API_BASE_URL = config.base_url || 'http://localhost:5000';
 
     function getFilterState() {
         return {

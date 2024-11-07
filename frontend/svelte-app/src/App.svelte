@@ -9,6 +9,7 @@
     import ManagerTimetable from './ManagerTimetable.svelte';
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
     import CancelRequest from './CancelRequest.svelte';
+    import Appr_Rej from './Appr_Rej.svelte';
 
     import { jwtToken, userClaims } from './authStore';
     import Login from './Login.svelte';
@@ -93,6 +94,8 @@
             <ManagerTimetable />
         {:else if $currentRoute === '/cancel-request'}
             <CancelRequest />
+        {:else if $currentRoute === '/tasklist'}
+            <Appr_Rej />
         {/if}
     </div>
 
@@ -137,9 +140,15 @@
         <button 
         on:click={() => navigateTo('/manager-timetable')}
         class:active={$currentRoute === '/manager-timetable'}
-    >
-        ManagerTimetable 
-    </button>
+        >
+            ManagerTimetable 
+        </button>
+        <button 
+            on:click={() => navigateTo('/tasklist')}
+            class:active={$currentRoute === '/tasklist'}
+        >
+            Task List
+        </button>
     </nav>
 </main>
 {:else}

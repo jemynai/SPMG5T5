@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte'; 
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
+	import config from './config.json';
 	
 	let current_user = '130002';
 	let current_view = 'self';
@@ -49,8 +50,8 @@
 
 	async function fetchArrangements() {
 		const endpoint = current_view === 'self' 
-			? `http://localhost:8000/employee_view_own_ttbl?eid=${current_user}`
-			: `http://localhost:8000/employee_view_team_ttbl?eid=${current_user}`;
+			? `${config.base_url}/employee_view_own_ttbl?eid=${current_user}`
+			: `${config.base_url}/employee_view_team_ttbl?eid=${current_user}`;
 
 		try {
 			const response = await fetch(endpoint);
