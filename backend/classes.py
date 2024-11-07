@@ -327,3 +327,27 @@ class TimetableService:
         except Exception as e:
             print(f"Error getting employee arrangements: {str(e)}")
             return []
+        
+    def get_team_arrangements(
+        self,
+        employee_id: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> List[Arrangement]:
+        try:
+            user_doc = self.db.collection('users')\
+                        .document(employee_id).get().to_dict()
+            
+            rpt_manager = user_doc['rpt_manager']
+            # return rpt_manager
+            query = self.db.collection('arrangements')\
+                        .where('supervisors', '==', str(rpt_manager))
+            if start_date and end_date:
+                query = query.where('date', '>=', start_date)\
+                        .where('date', '<=', end_date)
+            docs = query.stream()
+            # broken
+            return [Arrangement.from_dict(doc.id, doc.to_dict()) for doc in docs]
+        except Exception as e:
+            print(f"Error getting employee arrangements: {str(e)}")
+            return []

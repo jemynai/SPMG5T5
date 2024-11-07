@@ -1,17 +1,18 @@
 from flask import Blueprint, request, jsonify
 from services.firebase import Firebase
+from classes import TimetableService
 
 # Define a blueprint for employee view timetable
 employee_view_team_bp = Blueprint('employee_view_team', __name__)
 
 @employee_view_team_bp.route('/employee_view_team_ttbl', methods=['GET'])
 def get_employee_arrangements():
-    db = Firebase().get_db()
     # Get employee_id from query params
     employee_id = request.args.get("eid")
     if not employee_id:
         return jsonify({"error": "No employee id provided."}), 400  # Bad Request if no id
     
+    timetableService = TimetableService(Firebase().get_db())
     arrangements_list = []
     def parse_arr(arr):
         for arrangement in arr:
@@ -19,21 +20,10 @@ def get_employee_arrangements():
             arrangement_data['id'] = arrangement.id
             arrangements_list.append(arrangement_data)
     try:
-        ## this section is broken, clarify what defines teammates with grp
-        
-        # arrangements = db.collection('arrangements').where('employee_id', '==', employee_id).stream()
-        # parse_arr(arrangements)
-        # Query the users collection
-        query1 = db.collection('users').where('employee_id', '==', employee_id).stream()
-
-        # Extract rpt_manager from the query results
-        for user in query1:
-            rpt_manager = user.to_dict().get('rpt_manager')
-            print(rpt_manager)  # Output the rpt_manager
-
-        query2 = db.collection('arrangements').where('employee_id', '==', employee_id).where('supervisor', '==', [1]).stream()
-                
+        arrangements = timetableService.get_team_arrangements(employee_id)
+        for a in arrangements:
+            arrangement_data = a.to_dict()
+            arrangements_list.append(arrangement_data)
         return jsonify({"arrangements": arrangements_list}), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
