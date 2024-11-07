@@ -83,56 +83,6 @@
         }
     }
 
-    async function updateEmployeeStatus(employeeId, newStatus) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update status');
-            }
-
-            await fetchEmployees(filterState);
-        } catch (error) {
-            console.error('Error updating employee status:', error);
-        }
-    }
-
-    async function fetchEmployeeSchedule(employeeId) {
-        try {
-            const params = new URLSearchParams();
-            if (selectedDateRange === 'custom') {
-                params.append('start_date', startDate);
-                params.append('end_date', endDate);
-            }
-
-            const response = await fetch(
-                `${API_BASE_URL}/employee/${employeeId}/schedule?${params.toString()}`
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch schedule');
-            }
-
-            const data = await response.json();
-            return data.schedules;
-        } catch (error) {
-            console.error('Error fetching schedule:', error);
-            return [];
-        }
-    }
-
-    function getStatusColor(status) {
-        return status === 'office' ? 'bg-green-100' : 'bg-blue-100';
-    }
-
     function getEmployeeInitials(name) {
         const [firstName = '', lastName = ''] = name.split(' ');
         return (firstName[0] || '') + (lastName[0] || '');
@@ -140,22 +90,6 @@
 
     function toggleFilters() {
         showFilters = !showFilters;
-    }
-
-    async function openEmployeeDetail(employee) {
-        selectedEmployee = employee;
-        showDetailModal = true;
-        
-        const schedules = await fetchEmployeeSchedule(employee.userID);
-        selectedEmployee = {
-            ...selectedEmployee,
-            scheduleHistory: schedules
-        };
-    }
-
-    function closeEmployeeDetail() {
-        showDetailModal = false;
-        selectedEmployee = null;
     }
 
     let filterTimeout;
@@ -192,10 +126,8 @@
         debouncedFetchEmployees(filterState);
     }
 </script>
-
 <main class="dashboard">
     <div class="container">
-        <!-- Header Section -->
         <div class="header">
             <div class="header-text">
                 <h1>Staff Schedule Dashboard</h1>
@@ -222,11 +154,9 @@
                 <p>{error}</p>
             </div>
         {:else}
-            <!-- Filters Section -->
             {#if showFilters}
                 <div class="filters">
                     <div class="filter-grid">
-                        <!-- Search Input -->
                         <div class="filter-item">
                             <label for="search-staff">Search Staff</label>
                             <div class="search-input">
@@ -235,7 +165,6 @@
                                     type="text"
                                     bind:value={searchQuery}
                                     placeholder="Name or department..."
-
                                 />
                                 <svg class="icon" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -243,8 +172,6 @@
                             </div>
                         </div>
 
-
-                        <!-- Department Filter -->
                         <div class="filter-item">
                             <label for="department-filter">Department</label>
                             <select id="department-filter" bind:value={selectedDepartment}>
@@ -252,18 +179,18 @@
                                 {#each departments as dept}
                                     <option value={dept}>{dept}</option>
                                 {/each}
-                            </select>                            
+                            </select>
                         </div>
-                        <!-- Work Status Filter -->
+
                         <div class="filter-item">
-    <label for="status-filter">Work Status</label>
-    <select id="status-filter" bind:value={selectedStatus}>
-        <option value="All">All Statuses</option>
-        <option value="office">In Office</option>
-        <option value="remote">Remote</option>
-    </select>
-</div>
-                     <!-- Date Range -->
+                            <label for="status-filter">Work Status</label>
+                            <select id="status-filter" bind:value={selectedStatus}>
+                                <option value="All">All Statuses</option>
+                                <option value="office">In Office</option>
+                                <option value="remote">Remote</option>
+                            </select>
+                        </div>
+
                         <div class="filter-item">
                             <label for="date-range-filter">Date Range</label>
                             <select id="date-range-filter" bind:value={selectedDateRange}>
@@ -284,17 +211,10 @@
                                 </div>
                             {/if}
                         </div>
-
-
-
-
-
-
                     </div>
                 </div>
             {/if}
 
-            <!-- Stats Overview -->
             <div class="stats">
                 <div class="stat-card">
                     <div>
@@ -306,9 +226,7 @@
                             <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-
                 </div>
-
 
                 <div class="stat-card">
                     <div>
@@ -320,22 +238,6 @@
                         <svg viewBox="0 0 24 24">
                             <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
                 </div>
 
@@ -349,26 +251,10 @@
                         <svg viewBox="0 0 24 24">
                             <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                         </svg>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                     </div>
                 </div>
             </div>
 
-
-            <!-- Tab Navigation -->
             <div class="tabs">
                 <button 
                     class="tab {activeTab === 'all' ? 'active' : ''}"
@@ -390,136 +276,24 @@
                 </button>
             </div>
 
-            <!-- Employee Grid -->
             <div class="employee-grid">
                 {#each activeTab === 'all' ? filteredEmployees : 
                        activeTab === 'office' ? officeEmployees : 
                        remoteEmployees as employee (employee.id)}
-                    <button
-                        class="employee-card"
-                        on:click={() => openEmployeeDetail(employee)}
-                    >
+                    <div class="employee-card">
                         <div class="employee-info">
-                            <div class="employee-avatar">
-                                {getEmployeeInitials(employee.name)}
-                            </div>
                             <div class="employee-details">
                                 <p class="employee-name">{employee.name}</p>
                                 <p class="employee-dept">{employee.department} • {employee.team}</p>
-                                <span class="status-badge {employee.status}">
-                                    {employee.status}
+                                <p class="employee-email">{employee.email}</p>
+                                <span class="status-badge {employee.status || 'office'}">
+                                    {employee.status || 'office'}
                                 </span>
                             </div>
                         </div>
-                    </button>
+                    </div>
                 {/each}
             </div>
-
-            <!-- Employee Detail Modal -->
-            {#if showDetailModal && selectedEmployee}
-            <div 
-            class="modal-backdrop" 
-            on:click={closeEmployeeDetail}
-            on:keydown={(e) => {
-                if (e.key === 'Escape') {
-                    closeEmployeeDetail();
-                }
-            }}
-            role="button"
-            tabindex="0"
-        >
-        </div>
-        
-                <div class="modal">
-                    <div class="modal-content">
-                        <button class="modal-close" on:click={closeEmployeeDetail}>
-                            <svg viewBox="0 0 24 24">
-                                <path d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-
-                        <div class="modal-header">
-                            <div class="employee-avatar large">
-                                {getEmployeeInitials(selectedEmployee.name)}
-                            </div>
-                            <div class="modal-title">
-                                <h3>{selectedEmployee.name}</h3>
-                                <p>{selectedEmployee.department} • {selectedEmployee.team}</p>
-                            </div>
-                        </div>
-
-                        <div class="modal-details">
-                            <div class="detail-grid">
-                                <div class="detail-item">
-                                    <dt>Employee ID</dt>
-                                    <dd>{selectedEmployee.id}</dd>
-                                </div>
-                                <div class="detail-item">
-                                    <dt>Manager</dt>
-                                    <dd>{selectedEmployee.manager}</dd>
-                                </div>
-                                <div class="detail-item">
-                                    <dt>Email</dt>
-                                    <dd>{selectedEmployee.email}</dd>
-                                </div>
-                                <div class="detail-item">
-                                    <dt>Phone</dt>
-                                    <dd>{selectedEmployee.phone}</dd>
-                                </div>
-                                <div class="detail-item">
-                                    <dt>Join Date</dt>
-                                    <dd>{selectedEmployee.joinDate}</dd>
-                                </div>
-                                <div class="detail-item">
-                                    <dt>Current Status</dt>
-                                    <dd>
-                                        <span class="status-badge {selectedEmployee.status}">
-                                            {selectedEmployee.status}
-                                        </span>
-                                    </dd>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="schedule-history">
-                            <h4>Schedule History</h4>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Hours</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {#each selectedEmployee.scheduleHistory as schedule}
-                                        <tr>
-                                            <td>{schedule.date}</td>
-                                            <td>{schedule.hours}</td>
-                                            <td>
-                                                <span class="status-badge {schedule.status}">
-                                                    {schedule.status}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="modal-actions">
-                            <button class="secondary" on:click={closeEmployeeDetail}>
-                                Close
-                            </button>
-                            <button 
-                                class="primary"
-                                on:click={() => updateEmployeeStatus(
-                                    selectedEmployee.id,
-                                    selectedEmployee.status === 'office' ? 'remote' : 'office')}>
-                        </div>
-                    </div>
-                </div>
-            {/if}
         {/if}
     </div>
 </main>
@@ -776,10 +550,6 @@
         padding: 1.5rem;
         border-radius: 0.75rem;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        border: none;
-        width: 100%;
-        text-align: left;
-        cursor: pointer;
         transition: box-shadow 0.2s;
     }
 
@@ -805,12 +575,6 @@
         color: #4b5563;
     }
 
-    .employee-avatar.large {
-        width: 4rem;
-        height: 4rem;
-        font-size: 1.25rem;
-    }
-
     .employee-details {
         flex: 1;
         min-width: 0;
@@ -827,6 +591,13 @@
         font-size: 0.875rem;
         color: #6b7280;
         margin-bottom: 0.5rem;
+    }
+
+    .employee-email {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        word-break: break-all;
     }
 
     .status-badge {
@@ -848,160 +619,6 @@
         color: #2563eb;
     }
 
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.5);
-        backdrop-filter: blur(4px);
-    }
-
-    .modal {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-        z-index: 50;
-    }
-
-    .modal-content {
-        background: white;
-        border-radius: 0.75rem;
-        width: 100%;
-        max-width: 42rem;
-        max-height: 90vh;
-        overflow-y: auto;
-        position: relative;
-        padding: 1.5rem;
-    }
-
-    .modal-close {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
-        padding: 0.5rem;
-        color: #6b7280;
-        border: none;
-        background: none;
-        cursor: pointer;
-    }
-
-    .modal-close:hover {
-        color: #374151;
-    }
-
-    .modal-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .modal-title h3 {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #111827;
-    }
-
-    .modal-title p {
-        color: #6b7280;
-        font-size: 0.875rem;
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 1.5rem;
-        padding: 1.5rem 0;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .detail-item dt {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-    }
-
-    .detail-item dd {
-        font-size: 0.875rem;
-        color: #111827;
-    }
-
-    .schedule-history {
-        border-top: 1px solid #e5e7eb;
-        padding-top: 1.5rem;
-    }
-
-    .schedule-history h4 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: #111827;
-        margin-bottom: 1rem;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th {
-        text-align: left;
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #374151;
-        background: #f9fafb;
-    }
-
-    td {
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        color: #111827;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.75rem;
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    button.primary {
-        background: #2563eb;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: none;
-        cursor: pointer;
-    }
-
-    button.primary:hover {
-        background: #1d4ed8;
-    }
-
-    button.secondary {
-        background: white;
-        color: #374151;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border: 1px solid #e5e7eb;
-        cursor: pointer;
-    }
-
-    button.secondary:hover {
-        background: #f9fafb;
-    }
-
     @media (max-width: 640px) {
         .container {
             padding: 1rem;
@@ -1009,12 +626,6 @@
 
         .employee-grid {
             grid-template-columns: 1fr;
-        }
-
-        .modal-content {
-            margin: 0;
-            max-height: 100vh;
-            border-radius: 0;
         }
 
         .detail-grid {

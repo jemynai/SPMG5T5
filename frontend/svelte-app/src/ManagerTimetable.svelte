@@ -624,6 +624,5 @@
     .features {
       flex-direction: column;
       gap: 1rem;
-    }
-  }
+    }  }
 </style>
