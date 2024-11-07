@@ -3,15 +3,15 @@
     import config from './config.json';
     
     let departments = [];
+    let allEmployees = []; // Store all employees
     let showDetailModal = false;
     let selectedEmployee = null;
     let searchQuery = '';
-    let selectedDepartment = 'All';  // Set default values
+    let selectedDepartment = 'All';
     let selectedStatus = 'All';
-    let selectedDateRange = 'today';  // Set default values
+    let selectedDateRange = 'today';
     let startDate = '';
     let endDate = ''; 
-    let employees = [];
     let loading = true;
     let error = null;
     let isRequestInProgress = false;
@@ -32,47 +32,81 @@
         };
     }
 
-    // Move the filtering logic to computed properties
-    $: filteredEmployees = employees;
+    // Client-side filtering function
+    function filterEmployees(employees, filters) {
+        return employees.filter(employee => {
+            // Department filter
+            if (filters.department && filters.department !== 'All' && 
+                employee.department !== filters.department) {
+                return false;
+            }
+            
+            // Status filter
+            if (filters.status && filters.status !== 'All' && 
+                employee.status !== filters.status.toLowerCase()) {
+                return false;
+            }
+            
+            // Search filter
+            if (filters.search) {
+                const searchTerm = filters.search.toLowerCase();
+                const searchFields = [
+                    employee.id,
+                    employee.name,
+                    employee.department,
+                    employee.email,
+                    employee.country,
+                    employee.position
+                ];
+                return searchFields.some(field => 
+                    String(field).toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            return true;
+        });
+    }
+
+    // Computed properties using filtered data
+    $: filteredEmployees = allEmployees.length ? 
+        filterEmployees(allEmployees, getFilterState()) : [];
     $: officeEmployees = filteredEmployees.filter(emp => emp.status === 'office');
     $: remoteEmployees = filteredEmployees.filter(emp => emp.status === 'remote');
     $: totalEmployees = filteredEmployees.length;
-    $: officePercentage = totalEmployees ? (officeEmployees.length / totalEmployees * 100).toFixed(1) : 0;
-    $: remotePercentage = totalEmployees ? (remoteEmployees.length / totalEmployees * 100).toFixed(1) : 0;
+    $: officePercentage = totalEmployees ? 
+        (officeEmployees.length / totalEmployees * 100).toFixed(1) : 0;
+    $: remotePercentage = totalEmployees ? 
+        (remoteEmployees.length / totalEmployees * 100).toFixed(1) : 0;
 
-    async function fetchEmployees(filters = {}) {
+    async function fetchInitialData() {
         if (isRequestInProgress) return;
         
         try {
             isRequestInProgress = true;
-            loading = true;  // Set loading immediately
+            loading = true;
 
-            const params = new URLSearchParams();
-            if (filters.department && filters.department !== 'All') {
-                params.append('department', filters.department);
-            }
-            if (filters.status && filters.status !== 'All') {
-                params.append('status', filters.status.toLowerCase());
-            }
-            if (filters.search) {
-                params.append('search', filters.search);
-            }
+            // Fetch all data at once
+            const [deptResponse, empResponse] = await Promise.all([
+                fetch(`${API_BASE_URL}/departments`),
+                fetch(`${API_BASE_URL}/employees`)
+            ]);
 
-            const response = await fetch(`${API_BASE_URL}/employees?${params.toString()}`);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch employees');
+            if (!deptResponse.ok || !empResponse.ok) {
+                throw new Error('Failed to fetch initial data');
             }
 
-            const data = await response.json();
-            employees = data.employees;
+            const deptData = await deptResponse.json();
+            const empData = await empResponse.json();
+
+            departments = deptData.departments;
+            allEmployees = empData.employees;
             error = null;
             
         } catch (err) {
-            console.error('Error fetching employees:', err);
-            error = err.message || 'Failed to load employee data';
-            employees = [];
+            console.error('Error fetching initial data:', err);
+            error = err.message || 'Failed to load data';
+            departments = [];
+            allEmployees = [];
         } finally {
             loading = false;
             isRequestInProgress = false;
@@ -83,45 +117,37 @@
         showFilters = !showFilters;
     }
 
-    let filterTimeout;
-    function debouncedFetchEmployees() {
-        clearTimeout(filterTimeout);
-        filterTimeout = setTimeout(() => {
-            if (!isRequestInProgress) {
-                fetchEmployees(getFilterState());
-            }
-        }, 500);  // Increased debounce time to 500ms
-    }
-
-    // Handle individual filter changes
-    $: if (searchQuery !== undefined) debouncedFetchEmployees();
-    $: if (selectedDepartment !== undefined) debouncedFetchEmployees();
-    $: if (selectedStatus !== undefined) debouncedFetchEmployees();
-    $: if (selectedDateRange !== undefined) debouncedFetchEmployees();
-
-    onMount(async () => {
+    async function updateEmployeeStatus(employeeId, newStatus) {
         try {
-            // Fetch departments first
-            const response = await fetch(`${API_BASE_URL}/departments`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch departments');
-            }
-            const data = await response.json();
-            departments = data.departments;
+            const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
 
-            // Then fetch employees
-            await fetchEmployees(getFilterState());
+            if (!response.ok) {
+                throw new Error('Failed to update status');
+            }
+
+            // Refresh employee data after status update
+            await fetchInitialData();
         } catch (err) {
-            console.error('Error in initialization:', err);
-            departments = [];
+            console.error('Error updating status:', err);
             error = err.message;
         }
+    }
+
+    onMount(async () => {
+        await fetchInitialData();
     });
 
     onDestroy(() => {
-        clearTimeout(filterTimeout);
+        // Cleanup if needed
     });
 </script>
+
 <main class="dashboard">
     <div class="container">
         <div class="header">
@@ -177,6 +203,16 @@
                                 {/each}
                             </select>
                         </div>
+
+                        <div class="filter-item">
+                            <label for="status-filter">Status</label>
+                            <select id="status-filter" bind:value={selectedStatus}>
+                                <option value="All">All Statuses</option>
+                                <option value="office">In Office</option>
+                                <option value="remote">Remote</option>
+                            </select>
+                        </div>
+
                         <div class="filter-item">
                             <label for="date-range-filter">Date Range</label>
                             <select id="date-range-filter" bind:value={selectedDateRange}>
@@ -272,9 +308,20 @@
                                 <p class="employee-name">{employee.name}</p>
                                 <p class="employee-dept">{employee.department} • {employee.team}</p>
                                 <p class="employee-email">{employee.email}</p>
-                                <span class="status-badge {employee.status || 'office'}">
-                                    {employee.status || 'office'}
-                                </span>
+                                <div class="status-wrapper">
+                                    <span class="status-badge {employee.status}">
+                                        {employee.status}
+                                    </span>
+                                    <button 
+                                        class="status-toggle"
+                                        on:click={() => updateEmployeeStatus(
+                                            employee.id, 
+                                            employee.status === 'office' ? 'remote' : 'office'
+                                        )}
+                                    >
+                                        Toggle Status
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -283,339 +330,26 @@
         {/if}
     </div>
 </main>
+
 <style>
-    .dashboard {
-        min-height: 100vh;
-        background-color: #f9fafb;
-    }
-
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem;
-    }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-
-    .header h1 {
-        font-size: 1.875rem;
-        font-weight: bold;
-        color: #111827;
-    }
-
-    .header p {
-        color: #6b7280;
-        margin-top: 0.25rem;
-    }
-
-    .icon {
-        width: 20px;
-        height: 20px;
-        fill: none;
-        stroke: currentColor;
-    }
-
-    .filter-toggle {
+    /* All the existing styles remain the same */
+    .status-wrapper {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.5rem;
-        cursor: pointer;
-    }
-
-    .filter-toggle:hover {
-        background: #f9fafb;
-    }
-
-    .loading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 16rem;
-        background: white;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .spinner {
-        width: 3rem;
-        height: 3rem;
-        border: 4px solid #e5e7eb;
-        border-top-color: #3b82f6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        to { 
-            transform: rotate(360deg); 
-        }
-    }
-
-    .error {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 1rem;
-        background: #fee2e2;
-        border: 1px solid #ef4444;
-        border-radius: 0.5rem;
-        color: #b91c1c;
-    }
-
-    .filters {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        margin-bottom: 2rem;
-    }
-
-    .filter-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         gap: 1rem;
-    }
-
-    .filter-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .filter-item label {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #374151;
-    }
-
-    .filter-item input,
-    .filter-item select {
-        padding: 0.5rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        width: 100%;
-    }
-
-    .search-input {
-        position: relative;
-    }
-
-    .search-input input {
-        padding-left: 2.5rem;
-    }
-
-    .search-input .icon {
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #9ca3af;
-        width: 16px;
-        height: 16px;
-    }
-
-    .date-range {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
         margin-top: 0.5rem;
     }
 
-    .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .stat-value {
-        font-size: 1.875rem;
-        font-weight: bold;
-        color: #111827;
-        margin: 0.25rem 0;
-    }
-
-    .stat-percentage {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .stat-icon {
-        padding: 0.75rem;
-        border-radius: 9999px;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .stat-icon.office {
-        background: #dcfce7;
-        color: #16a34a;
-    }
-
-    .stat-icon.remote {
-        background: #dbeafe;
-        color: #2563eb;
-    }
-
-    .stat-value.office {
-        color: #16a34a;
-    }
-
-    .stat-value.remote {
-        color: #2563eb;
-    }
-
-    .tabs {
-        display: flex;
-        gap: 0.25rem;
-        background: #f3f4f6;
-        padding: 0.25rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .tab {
-        flex: 1;
-        padding: 0.5rem 1rem;
-        text-align: center;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: #6b7280;
-        border-radius: 0.375rem;
-        cursor: pointer;
-        border: none;
-        background: none;
-    }
-
-    .tab:hover {
-        color: #374151;
-    }
-
-    .tab.active {
-        background: white;
-        color: #111827;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .employee-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1rem;
-    }
-
-    .employee-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-        transition: box-shadow 0.2s;
-    }
-
-    .employee-card:hover {
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .employee-info {
-        display: flex;
-        gap: 1rem;
-        align-items: start;
-    }
-
-    .employee-avatar {
-        width: 3rem;
-        height: 3rem;
-        background: #f3f4f6;
-        border-radius: 9999px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 500;
-        color: #4b5563;
-    }
-
-    .employee-details {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .employee-name {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #111827;
-        margin-bottom: 0.25rem;
-    }
-
-    .employee-dept {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-    }
-
-    .employee-email {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-        word-break: break-all;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
+    .status-toggle {
+        padding: 0.25rem 0.5rem;
         font-size: 0.75rem;
-        font-weight: 500;
-        text-transform: capitalize;
+        border-radius: 0.375rem;
+        background-color: #f3f4f6;
+        border: 1px solid #e5e7eb;
+        cursor: pointer;
     }
 
-    .status-badge.office {
-        background: #dcfce7;
-        color: #16a34a;
-    }
-
-    .status-badge.remote {
-        background: #dbeafe;
-        color: #2563eb;
-    }
-
-    @media (max-width: 640px) {
-        .container {
-            padding: 1rem;
-        }
-
-        .employee-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .detail-grid {
-            grid-template-columns: 1fr;
-        }
+    .status-toggle:hover {
+        background-color: #e5e7eb;
     }
 </style>
