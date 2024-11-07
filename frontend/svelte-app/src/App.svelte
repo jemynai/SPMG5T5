@@ -11,7 +11,6 @@
 
     import { jwtToken, userClaims } from './authStore';
     import Login from './Login.svelte';
-    import Apply from './Apply.svelte';
 
     let isLoggedIn = $jwtToken !== '';
     $: isLoggedIn = $jwtToken !== '';
