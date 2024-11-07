@@ -14,6 +14,7 @@
     let reason = "";
     let reviewMode = false;
 
+    // Date validation to ensure selected date is at least 24 hours in the future
     const validateDate = () => {
         let now = new Date();
         let selected = new Date(selectedDate);

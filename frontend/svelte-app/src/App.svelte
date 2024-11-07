@@ -15,7 +15,7 @@
     let isLoggedIn = $jwtToken !== '';
     $: isLoggedIn = $jwtToken !== '';
 
-    // claims access
+    // Claims access
     const userId = $userClaims.sub;
     const role = $userClaims.role;
     const firstName = $userClaims.first_name;
@@ -29,8 +29,14 @@
     let showModal = false;
 
     // Modal handlers
-    const openModal = () => showModal = true;
-    const closeModal = () => showModal = false;
+    const openModal = () => {
+        showModal = true;
+        console.log("Modal opened");
+    };
+    const closeModal = () => {
+        showModal = false;
+        console.log("Modal closed");
+    };
 
     // Enhanced navigation function with transition handling
     const navigateTo = async (path) => {
@@ -51,10 +57,11 @@
         };
     }
 </script>
+
 {#if isLoggedIn}
 <main>
+    <!-- Top Navigation -->
     <nav class="top-nav">
-        
         <button 
             class="nav-link" 
             on:click={() => navigateTo('/withdrawal-request')}
@@ -71,11 +78,12 @@
         </button>
     </nav>
 
+    <!-- Main Content with Route Rendering -->
     <div class="content" class:transitioning={$isRouteTransitioning}>
         {#if $currentRoute === '/withdrawal-request'}
             <WithdrawalRequest />
         {:else if $currentRoute === '/apply'}
-            <ApplyModal />
+            <ApplyModal on:close={closeModal} />
         {:else if $currentRoute === '/employee-timetable'}
             <EmployeeTimetable />
         {:else if $currentRoute === '/hr-view-timetable'}
@@ -87,8 +95,10 @@
         {/if}
     </div>
 
+    <!-- Apply Button to Open Modal -->
     <button class="apply-button" on:click={openModal}>Apply</button>
 
+    <!-- Apply Modal with close event listener -->
     {#if showModal}
         <ApplyModal on:close={closeModal} />
     {/if}
@@ -121,11 +131,11 @@
             Cancel Request
         </button>
         <button 
-        on:click={() => navigateTo('/manager-timetable')}
-        class:active={$currentRoute === '/manager-timetable'}
-    >
-        ManagerTimetable 
-    </button>
+            on:click={() => navigateTo('/manager-timetable')}
+            class:active={$currentRoute === '/manager-timetable'}
+        >
+            Manager Timetable
+        </button>
     </nav>
 </main>
 {:else}
