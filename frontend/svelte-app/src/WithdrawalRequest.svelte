@@ -266,4 +266,8 @@
     .empty-state p {
         color: #666;
     }
+
+    :global(.ec-events) {
+        margin: 0 4px 0 4px !important;
+    } 
 </style>
