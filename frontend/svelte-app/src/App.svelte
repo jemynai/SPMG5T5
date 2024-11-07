@@ -10,6 +10,18 @@
     import ViewOwnSchedule from './ViewOwnSchedule.svelte';
     import CancelRequest from './CancelRequest.svelte';
 
+    import { jwtToken, userClaims } from './authStore';
+    import Login from './Login.svelte';
+
+    let isLoggedIn = $jwtToken !== '';
+    $: isLoggedIn = $jwtToken !== '';
+
+    // claims access
+    const userId = $userClaims.sub;
+    const role = $userClaims.role;
+    const firstName = $userClaims.first_name;
+    const lastName = $userClaims.last_name;
+
     // Create stores for route management
     const currentRoute = writable('/arrangements');
     const isRouteTransitioning = writable(false);
@@ -40,7 +52,7 @@
         };
     }
 </script>
-
+{#if isLoggedIn}
 <main>
     <nav class="top-nav">
         <button 
@@ -130,6 +142,9 @@
     </button>
     </nav>
 </main>
+{:else}
+<Login />
+{/if}
 
 <style>
     main {
