@@ -30,7 +30,7 @@ class EmployeeRepository(DbRepository):
                 password = employee_data["password"] if "password" in employee_data else None
 
                 employee = Employee(
-                    user_id=employee_data["user_id"],
+                    user_id=employee_id,
                     name=name,
                     contact_info=contact_info,
                     job_details=job_details,
@@ -75,15 +75,11 @@ class EmployeeRepository(DbRepository):
                     role=employee_data[0]["role"],
                     password=password
                 )
-                
-                print("Employee found")
 
                 return employee
             else:
-                print("Employee not found")
                 return None
         except Exception as e:
-            print("ERROR!")
             print(e)
             return None
         
