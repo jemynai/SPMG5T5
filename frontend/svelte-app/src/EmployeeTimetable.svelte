@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'; 
     import Calendar from '@event-calendar/core';
     import DayGrid from '@event-calendar/day-grid';
-	import config from './config.json';
+	import config from './config';
 
 	// event-calendar code
 	let current_user = '130002';

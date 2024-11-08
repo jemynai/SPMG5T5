@@ -1,6 +1,6 @@
 <script>
     import { onMount, onDestroy } from 'svelte';
-    import config from './config.json';
+    import config from './config';
     
     let departments = [];
     let allEmployees = []; // Store all employees

@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import config from './config.json';
+    import config from './config';
     let withdrawalRequests = [];
     let loading = false;
     let error = null;

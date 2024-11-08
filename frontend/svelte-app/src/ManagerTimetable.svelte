@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { jwtToken, userClaims } from './authstore';
   import Login from './Login.svelte';
+  import config from './config';
   
   let selectedStatus = 'All';
   let selectedDateRange = 'today';
@@ -17,7 +18,7 @@
   let activeTab = 'all';
   let searchQuery = '';
 
-  const API_BASE_URL = 'http://localhost:5000';
+  const API_BASE_URL = config.base_url || 'http://localhost:5000';
 
   // Subscribe to auth store changes
   $: isAuthenticated = !!$jwtToken;

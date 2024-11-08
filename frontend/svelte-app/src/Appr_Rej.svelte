@@ -3,6 +3,7 @@
 
   import { onMount } from 'svelte';  // Import onMount to fetch data when component mounts
 
+  import config from './config';
   let tableData = [];  // Data array for the table
   let showModal = false;
   let showModal2 = false;
@@ -11,7 +12,7 @@
   // Function to fetch table data from the API
   async function fetchTableData() {
       try {
-          const response = await fetch(`http://127.0.0.1:5000/dir-mgr-pending`); // Update the URL as needed
+          const response = await fetch(`${config.base_url}/dir-mgr-pending`); // Update the URL as needed
           if (!response.ok) {
               throw new Error('Network response was not ok');
           }
@@ -47,7 +48,7 @@
   
   async function deleteRequest() {
     try {
-        const response = await fetch(`http://127.0.0.1:5000/arrangements/reject?aID=${selectedRow.arrangementId}`, {
+        const response = await fetch(`${config.base_url}/arrangements/reject?aID=${selectedRow.arrangementId}`, {
             method: 'POST'
         });
 
@@ -67,7 +68,7 @@
   async function approveRequest() {
 
     try {
-        const response = await fetch(`http://127.0.0.1:5000/arrangements/approve?aID=${selectedRow.arrangementId}`, {
+        const response = await fetch(`${config.base_url}/arrangements/approve?aID=${selectedRow.arrangementId}`, {
             method: 'POST'
         });
 

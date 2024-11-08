@@ -1,5 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
+    
+    import config from './config';
     const dispatch = createEventDispatcher();
 
     let step = 1;
@@ -111,7 +113,7 @@
         };
 
         try {
-            const response = await fetch("http://127.0.0.1:5000/create_arrangement", {
+            const response = await fetch(`${config.base_url}/create_arrangement`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

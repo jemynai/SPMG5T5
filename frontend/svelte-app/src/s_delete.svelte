@@ -2,11 +2,12 @@
     import { onMount } from "svelte";
     let requests = [];
     let selectedRequest = null;
+    import config from './config';
 
     // Fetch all WFH requests when the component is mounted
     onMount(async () => {
         try {
-            const res = await fetch("http://127.0.0.1:8080/wfh_requests");
+            const res = await fetch(`${config.base_url}/wfh_requests`);
             requests = await res.json();
         } catch (error) {
             console.error("Error fetching WFH requests:", error);
@@ -21,7 +22,7 @@
     // Function to remove a full request
     const removeRequest = async (requestId) => {
         try {
-            await fetch(`http://127.0.0.1:8080/delete_request/${requestId}`, { method: "DELETE" });
+            await fetch(`${config.base_url}/delete_request/${requestId}`, { method: "DELETE" });
             // Refresh list of requests after deletion
             requests = requests.filter(r => r.id !== requestId);
             selectedRequest = null;  // Clear selection
@@ -33,7 +34,7 @@
     // Function to remove a specific day from a request
     const removeDay = async (requestId, day) => {
         try {
-            await fetch(`http://127.0.0.1:8080/remove_day/${requestId}`, {
+            await fetch(`${config.base_url}/remove_day/${requestId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

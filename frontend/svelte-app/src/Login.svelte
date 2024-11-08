@@ -1,6 +1,6 @@
 <script>
   import {createEventDispatcher} from 'svelte';
-  import config from './config.json';
+  import config from './config';
   import { jwtToken } from './authstore';
 
   const dispatch = createEventDispatcher();
