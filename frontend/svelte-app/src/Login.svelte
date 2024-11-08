@@ -1,7 +1,7 @@
 <script>
   import {createEventDispatcher} from 'svelte';
   import config from './config.json';
-  import { jwtToken } from './authStore';
+  import { jwtToken } from './authstore';
 
   const dispatch = createEventDispatcher();
   let email = '';

@@ -1,6 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { jwtToken, userClaims } from './authStore';
+  import { jwtToken, userClaims } from './authstore';
   import Login from './Login.svelte';
   
   let selectedStatus = 'All';
