@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Optional
 from datetime import datetime
 from firebase_admin import credentials, firestore
+import logging
 
 @dataclass
 class Name:
@@ -325,7 +326,7 @@ class TimetableService:
             docs = query.stream()
             return [Arrangement.from_dict(doc.id, doc.to_dict()) for doc in docs]
         except Exception as e:
-            print(f"Error getting employee arrangements: {str(e)}")
+            logging.error(f"Error getting employee arrangements: {str(e)}")
             return []
         
     def get_team_arrangements(
