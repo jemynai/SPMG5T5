@@ -59,25 +59,57 @@
 </script>
 
 {#if isLoggedIn}
+<!-- Top Navigation -->
+<nav class="top-nav">
+    <button 
+        class="nav-link" 
+        on:click={() => navigateTo('/employee-timetable')}
+        class:active={$currentRoute === '/employee-timetable'}
+    >
+        My Timetable
+    </button>
+    <button 
+        class="nav-link" 
+        on:click={() => navigateTo('/withdrawal-request')}
+        class:active={$currentRoute === '/withdrawal-request'}
+    >
+        Withdrawal Requests
+    </button>
+    <button 
+        class="nav-link" 
+        on:click={() => navigateTo('/hr-view-timetable')}
+        class:active={$currentRoute === '/hr-view-timetable'}
+    >
+        HR Timetable
+    </button>
+    <button 
+        class="nav-link" 
+        on:click={() => navigateTo('/manager-timetable')}
+        class:active={$currentRoute === '/manager-timetable'}
+    >
+        Manager Timetable
+    </button>
+    <button 
+        class="nav-link" 
+        on:click={() => navigateTo('/cancel-request')}
+        class:active={$currentRoute === '/cancel-request'}
+    >
+        Cancel Request
+    </button>
+    <button 
+        class="nav-link right apply-button" 
+        on:click={openModal}
+        class:active={$currentRoute === '/apply'}
+    >
+        Apply
+    </button>
+    <button 
+        class="nav-link" 
+    >
+        Logout
+    </button>
+</nav>
 <main>
-    <!-- Top Navigation -->
-    <nav class="top-nav">
-        <button 
-            class="nav-link" 
-            on:click={() => navigateTo('/withdrawal-request')}
-            class:active={$currentRoute === '/withdrawal-request'}
-        >
-            Withdrawals
-        </button>
-        <button 
-            class="nav-link" 
-            on:click={() => navigateTo('/apply')}
-            class:active={$currentRoute === '/apply'}
-        >
-            Apply
-        </button>
-    </nav>
-
     <!-- Main Content with Route Rendering -->
     <div class="content" class:transitioning={$isRouteTransitioning}>
         {#if $currentRoute === '/withdrawal-request'}
@@ -102,41 +134,6 @@
     {#if showModal}
         <ApplyModal on:close={closeModal} />
     {/if}
-
-    <!-- Navigation Buttons -->
-    <nav class="function-nav">
-        <button 
-            on:click={() => navigateTo('/employee-timetable')}
-            class:active={$currentRoute === '/employee-timetable'}
-        >
-            View Own Schedule
-        </button>
-    
-        <button 
-            on:click={() => navigateTo('/withdrawal-request')}
-            class:active={$currentRoute === '/withdrawal-request'}
-        >
-            Withdrawal Request
-        </button>
-        <button 
-            on:click={() => navigateTo('/hr-view-timetable')}
-            class:active={$currentRoute === '/hr-view-timetable'}
-        >
-            HR Timetable
-        </button>
-        <button 
-            on:click={() => navigateTo('/cancel-request')}
-            class:active={$currentRoute === '/cancel-request'}
-        >
-            Cancel Request
-        </button>
-        <button 
-            on:click={() => navigateTo('/manager-timetable')}
-            class:active={$currentRoute === '/manager-timetable'}
-        >
-            Manager Timetable
-        </button>
-    </nav>
 </main>
 {:else}
 <Login />
@@ -145,17 +142,23 @@
 <style>
     main {
         font-family: Verdana, sans-serif;
-        padding: 1rem;
+        padding: 4rem;
         max-width: 1200px;
         margin: 0 auto;
     }
 
     .top-nav {
+        position: fixed;
+        width: 100%;
+        z-index: 1000;
         margin-bottom: 2rem;
-        padding: 1rem 0;
         border-bottom: 1px solid #eaeaea;
         display: flex;
+        justify-content: space-between;
+        box-sizing: border-box;
         gap: 1rem;
+        background-color: #ffffff;
+        padding: 8px 1rem 0 0;
     }
 
     .nav-link {
@@ -167,6 +170,10 @@
         cursor: pointer;
         transition: all 0.2s;
         border-radius: 0.375rem;
+    }
+    
+    .right {
+        margin-left: auto
     }
 
     .nav-link:hover {
