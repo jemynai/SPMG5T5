@@ -27,11 +27,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest
           pip install -r requirements.txt
-      - name: Set PYTHONPATH for pytest
-        run: |
-          echo "Setting PYTHONPATH..."
-          export PYTHONPATH=$(pwd)  # Set PYTHONPATH to the root of the repo
-
       - name: Run tests
         env:
           FIREBASE_KEY: ${{ secrets.FIREBASE_KEY }}
@@ -39,4 +34,4 @@ jobs:
 
         run: |
           cd backend  # Change directory to the backend folder
-          pytest  # Run your tests using pytest
+          python -m unittest discover -s tests -p "test_*.py"
