@@ -39,6 +39,10 @@ export default {
 		file: 'svelte-app/public/build/bundle.js'
 	},
 	plugins: [
+		replace({
+			'process.env.BASE_URL': JSON.stringify(process.env.BASE_URL),
+			preventAssignment: true
+		}),
 		json(),
 		svelte({
 			compilerOptions: {
